@@ -60,21 +60,21 @@ def app_evaluate(config:dict):
                             match model:
                                 case 'tgat':
                                     model_name=f"tgat_{seed}_{lr}_{batch_size}"
-                                    model=TGAT(node_dim=1,latent_dim=latent_dim)
-                                    model=DataUtils.load_model_parameter(model=model,model_name=model_name)
+                                    trained_model=TGAT(node_dim=1,latent_dim=latent_dim)
+                                    trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
                                 case 'tgn':
                                     model_name=f"tgn_{emb}_{seed}_{lr}_{batch_size}"
-                                    model=TGN(node_dim=1,latent_dim=latent_dim,emb=emb)
-                                    model=DataUtils.load_model_parameter(model=model,model_name=model_name)
+                                    trained_model=TGN(node_dim=1,latent_dim=latent_dim,emb=emb)
+                                    trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
                                 case 'trgnn':
                                     model_name=f"trgnn_{seed}_{lr}_{batch_size}"
-                                    model=TRGNN(node_dim=1,latent_dim=latent_dim)
-                                    model=DataUtils.load_model_parameter(model=model,model_name=model_name)
+                                    trained_model=TRGNN(node_dim=1,latent_dim=latent_dim)
+                                    trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
                                 case 'trgat':
                                     model_name=f"trgat_{seed}_{lr}_{batch_size}"
-                                    model=TRGAT(node_dim=1,latent_dim=latent_dim)
-                                    model=DataUtils.load_model_parameter(model=model,model_name=model_name)
-                            acc,macrof1,auroc,prauc,mcc=ModelTrainer.test(model=model,data_loader_list=test_data_loader_list)
+                                    trained_model=TRGAT(node_dim=1,latent_dim=latent_dim)
+                                    trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
+                            acc,macrof1,auroc,prauc,mcc=ModelTrainer.test(model=trained_model,data_loader_list=test_data_loader_list)
 
                             wandb.log({
                                 f"acc":acc,
