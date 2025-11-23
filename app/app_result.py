@@ -6,7 +6,7 @@ def app_result(config:dict):
     api=wandb.Api()
     run_20=api.run(f"jcoh-research/TRGNN/dtzm8z8b")
     run_50=api.run(f"jcoh-research/TRGNN/8n1ol7b8")
-    # run_100=api.run(f"jcoh-research/TRGNN/")
+    run_100=api.run(f"jcoh-research/TRGNN/6cltmsoj")
     # run_500=api.run(f"jcoh-research/TRGNN/")
     # run_1000=api.run(f"jcoh-research/TRGNN/")
 
@@ -21,8 +21,8 @@ def app_result(config:dict):
                     run=run_20
                 case 50:
                     run=run_50
-                # case 100:
-                #     run=run_100
+                case 100:
+                    run=run_100
                 # case 500:
                 #     run=run_500
                 # case 1000:
