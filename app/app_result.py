@@ -5,10 +5,10 @@ import pandas as pd
 def app_result(config:dict):
     api=wandb.Api()
     run_20=api.run(f"jcoh-research/TRGNN/779iword")
-    run_50=api.run(f"jcoh-research/TRGNN/")
-    run_100=api.run(f"jcoh-research/TRGNN/")
-    run_500=api.run(f"jcoh-research/TRGNN/")
-    run_1000=api.run(f"jcoh-research/TRGNN/")
+    # run_50=api.run(f"jcoh-research/TRGNN/")
+    # run_100=api.run(f"jcoh-research/TRGNN/")
+    # run_500=api.run(f"jcoh-research/TRGNN/")
+    # run_1000=api.run(f"jcoh-research/TRGNN/")
 
     match config['app_num']:
         case 1:
@@ -19,14 +19,14 @@ def app_result(config:dict):
             match config['num_nodes']:
                 case 20:
                     run=run_20
-                case 50:
-                    run=run_50
-                case 100:
-                    run=run_100
-                case 500:
-                    run=run_500
-                case 1000:
-                    run=run_1000
+                # case 50:
+                #     run=run_50
+                # case 100:
+                #     run=run_100
+                # case 500:
+                #     run=run_500
+                # case 1000:
+                #     run=run_1000
             history=run.history(keys=["model","emb","seed","lr","batch_size","acc","macrof1","auroc","prauc","mcc"])
             df=pd.DataFrame(history)
             
