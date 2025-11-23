@@ -4,7 +4,7 @@ import pandas as pd
 
 def app_result(config:dict):
     api=wandb.Api()
-    run_20=api.run(f"jcoh-research/TRGNN/o1v3qfij")
+    run_20=api.run(f"jcoh-research/TRGNN/dtzm8z8b")
     # run_50=api.run(f"jcoh-research/TRGNN/")
     # run_100=api.run(f"jcoh-research/TRGNN/")
     # run_500=api.run(f"jcoh-research/TRGNN/")
