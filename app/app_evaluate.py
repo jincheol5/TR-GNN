@@ -28,11 +28,12 @@ def app_evaluate(config:dict):
             batch_size=16
             latent_dim=32
 
-            dataset_list=DataUtils.load_from_pickle(file_name=f"test_{config['num_nodes']}",dir_type="test",num_nodes=config['num_nodes'])
-            test_data_loader_list=[]
-            for dataset in dataset_list:
-                data_loader=ModelTrainUtils.get_data_loader(dataset=dataset,batch_size=batch_size)
-                test_data_loader_list.append(data_loader)
+            if config['num_nodes']<1000: # 20,50,100,500
+                dataset_list=DataUtils.load_from_pickle(file_name=f"test_{config['num_nodes']}",dir_type="test",num_nodes=config['num_nodes'])
+                test_data_loader_list=[]
+                for dataset in dataset_list:
+                    data_loader=ModelTrainUtils.get_data_loader(dataset=dataset,batch_size=batch_size)
+                    test_data_loader_list.append(data_loader)
 
             for seed in seed_list:
                 """
@@ -74,7 +75,16 @@ def app_evaluate(config:dict):
                                     model_name=f"trgat_{seed}_{lr}_{batch_size}"
                                     trained_model=TRGAT(node_dim=1,latent_dim=latent_dim)
                                     trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
-                            acc,macrof1,auroc,prauc,mcc=ModelTrainer.test(model=trained_model,data_loader_list=test_data_loader_list)
+                            
+                            if config['num_nodes']<1000: # 20,50,100,500
+                                acc,macrof1,auroc,prauc,mcc=ModelTrainer.test(model=trained_model,data_loader_list=test_data_loader_list)
+                            else:
+                                case_config={
+                                    'num_nodes':config['num_nodes'],
+                                    'chunk_size':config['chunk_size'],
+                                    'batch_size':batch_size
+                                }
+                                acc,macrof1,auroc,prauc,mcc=ModelTrainer.test_chunk(model=trained_model,config=case_config)
 
                             wandb.log({
                                 f"acc":acc,
@@ -96,10 +106,12 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--app_num",type=int,default=1)
     parser.add_argument("--num_nodes",type=int,default=20)
+    parser.add_argument("--chunk_size",type=int,default=10)
     args=parser.parse_args()
 
     config={
         'app_num':args.app_num,
-        'num_nodes':args.num_nodes
+        'num_nodes':args.num_nodes,
+        'chunk_size':args.chunk_size
     }
     app_evaluate(config=config)
