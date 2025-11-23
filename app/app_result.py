@@ -5,7 +5,7 @@ import pandas as pd
 def app_result(config:dict):
     api=wandb.Api()
     run_20=api.run(f"jcoh-research/TRGNN/dtzm8z8b")
-    # run_50=api.run(f"jcoh-research/TRGNN/")
+    run_50=api.run(f"jcoh-research/TRGNN/8n1ol7b8")
     # run_100=api.run(f"jcoh-research/TRGNN/")
     # run_500=api.run(f"jcoh-research/TRGNN/")
     # run_1000=api.run(f"jcoh-research/TRGNN/")
@@ -19,8 +19,8 @@ def app_result(config:dict):
             match config['num_nodes']:
                 case 20:
                     run=run_20
-                # case 50:
-                #     run=run_50
+                case 50:
+                    run=run_50
                 # case 100:
                 #     run=run_100
                 # case 500:
