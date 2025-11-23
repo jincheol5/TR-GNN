@@ -7,7 +7,7 @@ def app_result(config:dict):
     run_20=api.run(f"jcoh-research/TRGNN/dtzm8z8b")
     run_50=api.run(f"jcoh-research/TRGNN/8n1ol7b8")
     run_100=api.run(f"jcoh-research/TRGNN/6cltmsoj")
-    # run_500=api.run(f"jcoh-research/TRGNN/")
+    run_500=api.run(f"jcoh-research/TRGNN/i9b6w722")
     # run_1000=api.run(f"jcoh-research/TRGNN/")
 
     match config['app_num']:
@@ -23,8 +23,8 @@ def app_result(config:dict):
                     run=run_50
                 case 100:
                     run=run_100
-                # case 500:
-                #     run=run_500
+                case 500:
+                    run=run_500
                 # case 1000:
                 #     run=run_1000
             history=run.history(keys=["model","emb","seed","lr","batch_size","acc","macrof1","auroc","prauc","mcc"])
