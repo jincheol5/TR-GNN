@@ -34,7 +34,7 @@ class ModelTrainer:
                 label_list=[batch['label'] for batch in data_loader] # List of [B,1], B는 각 element마다 다를 수 있음
                 label_list=[label.to(device) for label in label_list]
 
-                output=model(data_loader=data_loader,device=device) # List of [B,1], B는 각 element마다 다를 수 있음
+                output=model(data_loader=data_loader,device=device,mode='train') # List of [B,1], B는 각 element마다 다를 수 있음
 
                 loss=Metrics.compute_tR_loss(logit_list=output,label_list=label_list)
                 loss_list.append(loss)
@@ -88,8 +88,8 @@ class ModelTrainer:
             for data_loader in tqdm(data_loader_list,desc=f"Evaluating..."):
                 label_list=[batch['label'] for batch in data_loader] # List of [B,1], B는 각 element마다 다를 수 있음
                 label_list=[label.to(device) for label in label_list]
-
-                output=model(data_loader=data_loader,device=device) # List of [B,1], B는 각 element마다 다를 수 있음
+                
+                output=model(data_loader=data_loader,device=device,mode='test') # List of [B,1], B는 각 element마다 다를 수 있음
 
                 acc=Metrics.compute_tR_acc(logit_list=output,label_list=label_list)
                 acc_list.append(acc)
@@ -145,7 +145,7 @@ class ModelTrainer:
                     label_list=[batch['label'] for batch in data_loader] # List of [B,1], B는 각 element마다 다를 수 있음
                     label_list=[label.to(device) for label in label_list]
 
-                    output=model(data_loader=data_loader,device=device) # List of [B,1], B는 각 element마다 다를 수 있음
+                    output=model(data_loader=data_loader,device=device,mode='test') # List of [B,1], B는 각 element마다 다를 수 있음
 
                     acc=Metrics.compute_tR_acc(logit_list=output,label_list=label_list)
                     acc_list.append(acc)

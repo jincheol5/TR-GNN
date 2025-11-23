@@ -12,7 +12,7 @@ class TGAT(nn.Module):
         self.linear=nn.Linear(in_features=latent_dim,out_features=1)
         self.latent_dim=latent_dim
     
-    def forward(self,data_loader,device):
+    def forward(self,data_loader,device,mode:Literal['train','test']='train'):
         """
         Input:
             data_loader: List of batch
@@ -78,7 +78,7 @@ class TGN(nn.Module):
         self.latent_dim=latent_dim
         self.emb=emb
     
-    def forward(self,data_loader,device):
+    def forward(self,data_loader,device,mode:Literal['train','test']='train'):
         """
         Input:
             data_loader: List of batch
@@ -155,7 +155,7 @@ class TRGNN(nn.Module):
         self.linear=nn.Linear(in_features=latent_dim,out_features=1)
         self.latent_dim=latent_dim
 
-    def forward(self,data_loader,device):
+    def forward(self,data_loader,device,mode:Literal['train','test']='train'):
         """
         Input:
             data_loader: List of batch
@@ -226,7 +226,10 @@ class TRGNN(nn.Module):
             pred_logits.squeeze(1) # [B,]
             r_pred[tar]=pred_logits
             r_label=batch['r'][-1].clone() # [N,1]
-            r=ModelTrainUtils.teacher_forcing(r_pred=r_pred,r_label=r_label,tar=tar) # [N,1]
+            if mode=='train':
+                r=ModelTrainUtils.teacher_forcing(r_pred=r_pred,r_label=r_label,tar=tar) # [N,1]
+            else:
+                r=r_pred
         return logit_list # List of [B,1], B는 seq 마다 크기 다를 수 있음
 
 class TRGAT(nn.Module):
@@ -237,7 +240,7 @@ class TRGAT(nn.Module):
         self.linear=nn.Linear(in_features=latent_dim,out_features=1)
         self.latent_dim=latent_dim
     
-    def forward(self,data_loader,device):
+    def forward(self,data_loader,device,mode:Literal['train','test']='train'):
         """
         Input:
             data_loader: List of batch
@@ -302,5 +305,8 @@ class TRGAT(nn.Module):
             pred_logits.squeeze(1) # [B,]
             r_pred[tar]=pred_logits
             r_label=batch['r'][-1].clone() # [N,1]
-            r=ModelTrainUtils.teacher_forcing(r_pred=r_pred,r_label=r_label,tar=tar) # [N,1]
+            if mode=='train':
+                r=ModelTrainUtils.teacher_forcing(r_pred=r_pred,r_label=r_label,tar=tar) # [N,1]
+            else:
+                r=r_pred
         return logit_list # List of [B,1], B는 seq 마다 크기 다를 수 있음
