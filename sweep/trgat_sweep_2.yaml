@@ -1,0 +1,23 @@
+project: TRGNN
+method: grid
+name: trgat_train
+command:
+  - ${env}
+  - ${interpreter}
+  - -m
+  - app.app_train
+  - --app_num=1
+  - --model=trgat
+  - --optimizer=adam
+  - --epochs=100
+  - --early_stop=1
+  - --patience=10
+  - --lr=0.0001
+  - --latent_dim=32
+  - --batch_size=16
+  - --wandb=1
+  - --save_model=1
+  - ${args}            
+parameters:
+  seed:
+    values: [1,2,3]
