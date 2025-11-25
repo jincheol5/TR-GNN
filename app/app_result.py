@@ -104,16 +104,8 @@ def app_result(config:dict):
                 "prauc",
                 "mcc"
             ]].mean()
-            metric_std=df.groupby(["model","batch_size"])[[
-                "acc",
-                "macrof1",
-                "auroc",
-                "prauc",
-                "mcc"
-            ]].std().round(4)
             print(f"Evaluate Result:")
             print(metric_mean)
-            print(metric_std)
 
 if __name__=="__main__":
     """
