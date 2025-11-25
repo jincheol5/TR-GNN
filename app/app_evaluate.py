@@ -137,10 +137,11 @@ def app_evaluate(config:dict):
             torch.backends.cudnn.benchmark=False
 
             for batch_size in batch_size_list:
-                test_data_loader_list=[]
-                for dataset in dataset_list:
-                    data_loader=ModelTrainUtils.get_data_loader(dataset=dataset,batch_size=batch_size)
-                    test_data_loader_list.append(data_loader)
+                if config['num_nodes']<1000:
+                    test_data_loader_list=[]
+                    for dataset in dataset_list:
+                        data_loader=ModelTrainUtils.get_data_loader(dataset=dataset,batch_size=batch_size)
+                        test_data_loader_list.append(data_loader)
 
                 for model in model_list:
                     """
