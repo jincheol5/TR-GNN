@@ -116,6 +116,7 @@ def app_evaluate(config:dict):
             """
             model_list=['tgn','trgnn','trgat']
             batch_size_list=[4,8,16,32,64]
+            emb='attn'
             seed=1
             lr=0.0005
             latent_dim=32
@@ -142,50 +143,45 @@ def app_evaluate(config:dict):
                     test_data_loader_list.append(data_loader)
 
                 for model in model_list:
-                    if model=='tgn':
-                        emb_list=['time','sum','attn']
+                    """
+                    model setting and evaluating
+                    """
+                    match model:
+                        case 'tgn':
+                            
+                            model_name=f"tgn_{emb}_{seed}_{lr}_{batch_size}"
+                            trained_model=TGN(node_dim=1,latent_dim=latent_dim,emb=emb)
+                            trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
+                        case 'trgnn':
+                            model_name=f"trgnn_{seed}_{lr}_{batch_size}"
+                            trained_model=TRGNN(node_dim=1,latent_dim=latent_dim)
+                            trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
+                        case 'trgat':
+                            model_name=f"trgat_{seed}_{lr}_{batch_size}"
+                            trained_model=TRGAT(node_dim=1,latent_dim=latent_dim)
+                            trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
+
+                    if config['num_nodes']<1000: # 20,50,100,500
+                        acc,macrof1,auroc,prauc,mcc=ModelTrainer.test(model=trained_model,data_loader_list=test_data_loader_list)
                     else:
-                        emb_list=[None]
-                    for emb in emb_list:
-                        """
-                        model setting and evaluating
-                        """
-                        match model:
-                            case 'tgn':
-                                model_name=f"tgn_{emb}_{seed}_{lr}_{batch_size}"
-                                trained_model=TGN(node_dim=1,latent_dim=latent_dim,emb=emb)
-                                trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
-                            case 'trgnn':
-                                model_name=f"trgnn_{seed}_{lr}_{batch_size}"
-                                trained_model=TRGNN(node_dim=1,latent_dim=latent_dim)
-                                trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
-                            case 'trgat':
-                                model_name=f"trgat_{seed}_{lr}_{batch_size}"
-                                trained_model=TRGAT(node_dim=1,latent_dim=latent_dim)
-                                trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
+                        case_config={
+                            'num_nodes':config['num_nodes'],
+                            'chunk_size':config['chunk_size'],
+                            'batch_size':batch_size
+                        }
+                        acc,macrof1,auroc,prauc,mcc=ModelTrainer.test_chunk(model=trained_model,config=case_config)
 
-                        if config['num_nodes']<1000: # 20,50,100,500
-                            acc,macrof1,auroc,prauc,mcc=ModelTrainer.test(model=trained_model,data_loader_list=test_data_loader_list)
-                        else:
-                            case_config={
-                                'num_nodes':config['num_nodes'],
-                                'chunk_size':config['chunk_size'],
-                                'batch_size':batch_size
-                            }
-                            acc,macrof1,auroc,prauc,mcc=ModelTrainer.test_chunk(model=trained_model,config=case_config)
-
-                        wandb.log({
-                            f"acc":acc,
-                            f"macrof1":macrof1,
-                            f"auroc":auroc,
-                            f"prauc":prauc,
-                            f"mcc":mcc,
-                            f"model":model,
-                            f"emb": emb if emb else "default",
-                            f"seed":seed,
-                            f"lr":lr,
-                            f"batch_size":batch_size
-                        })
+                    wandb.log({
+                        f"acc":acc,
+                        f"macrof1":macrof1,
+                        f"auroc":auroc,
+                        f"prauc":prauc,
+                        f"mcc":mcc,
+                        f"model":model,
+                        f"seed":seed,
+                        f"lr":lr,
+                        f"batch_size":batch_size
+                    })
 
 if __name__=="__main__":
     """
