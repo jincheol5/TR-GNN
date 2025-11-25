@@ -10,6 +10,12 @@ def app_result(config:dict):
     run_500=api.run(f"jcoh-research/TRGNN/i9b6w722")
     run_1000=api.run(f"jcoh-research/TRGNN/i65i9oyv")
 
+    run_batch_20=api.run(f"jcoh-research/TRGNN/8fupjcsi")
+    run_batch_50=api.run(f"jcoh-research/TRGNN/qsgrbpoh")
+    run_batch_100=api.run(f"jcoh-research/TRGNN/be8u35ro")
+    run_batch_500=api.run(f"jcoh-research/TRGNN/wmzgrx7p")
+    run_batch_1000=api.run(f"jcoh-research/TRGNN/pqr5cvun")
+
     match config['app_num']:
         case 1:
             """
@@ -71,6 +77,43 @@ def app_result(config:dict):
             print(others_metric_mean)
             print(others_metric_std)
             print()
+
+        case 2:
+            """
+            App 2.
+            result of evaluate_2
+            """
+            match config['num_nodes']:
+                case 20:
+                    run=run_batch_20
+                case 50:
+                    run=run_batch_50
+                case 100:
+                    run=run_batch_100
+                case 500:
+                    run=run_batch_500
+                case 1000:
+                    run=run_batch_1000
+            history=run.history(keys=["model","seed","lr","batch_size","acc","macrof1","auroc","prauc","mcc"])
+            df=pd.DataFrame(history)
+            
+            metric_mean=df.groupby(["model","batch_size"])[[
+                "acc",
+                "macrof1",
+                "auroc",
+                "prauc",
+                "mcc"
+            ]].mean()
+            metric_std=df.groupby(["model","batch_size"])[[
+                "acc",
+                "macrof1",
+                "auroc",
+                "prauc",
+                "mcc"
+            ]].std().round(4)
+            print(f"Evaluate Result:")
+            print(metric_mean)
+            print(metric_std)
 
 if __name__=="__main__":
     """
