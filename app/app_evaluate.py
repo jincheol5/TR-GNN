@@ -122,10 +122,6 @@ def app_evaluate(config:dict):
 
             if config['num_nodes']<1000: # 20,50,100,500
                 dataset_list=DataUtils.load_from_pickle(file_name=f"test_{config['num_nodes']}",dir_type="test",num_nodes=config['num_nodes'])
-                test_data_loader_list=[]
-                for dataset in dataset_list:
-                    data_loader=ModelTrainUtils.get_data_loader(dataset=dataset,batch_size=batch_size)
-                    test_data_loader_list.append(data_loader)
 
             """
             seed setting
@@ -140,6 +136,11 @@ def app_evaluate(config:dict):
             torch.backends.cudnn.benchmark=False
 
             for batch_size in batch_size_list:
+                test_data_loader_list=[]
+                for dataset in dataset_list:
+                    data_loader=ModelTrainUtils.get_data_loader(dataset=dataset,batch_size=batch_size)
+                    test_data_loader_list.append(data_loader)
+
                 for model in model_list:
                     if model=='tgn':
                         emb_list=['time','sum','attn']
