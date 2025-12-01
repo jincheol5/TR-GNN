@@ -11,7 +11,8 @@ class ModelTrainUtils:
             dataset:
                 raw: [seq_len,N,1]
                 r: [seq_len,N,1]
-                t: [seq_len,N,1]
+                emb_t: [seq_len,N,1]
+                mem_t: [seq_len,N,1]
                 src: [seq_len,1]
                 tar: [seq_len,1]
                 n_mask: [seq_len,N]
@@ -22,7 +23,8 @@ class ModelTrainUtils:
                 batch
                     raw: [B,N,1]
                     r: [B,N,1]
-                    t: [B,N,1]
+                    emb_t: [B,N,1]
+                    mem_t: [B,N,1]
                     src: [B,1]
                     tar: [B,1]
                     n_mask: [B,N]
@@ -35,7 +37,8 @@ class ModelTrainUtils:
             batch={
                 "raw":dataset["raw"][start:end], # [B,N,1]
                 "r":dataset["r"][start:end], # [B,N,1]
-                "t":dataset["t"][start:end], # [B,N,1]
+                "emb_t":dataset["emb_t"][start:end], # [B,N,1]
+                "mem_t":dataset["mem_t"][start:end], # [B,N,1]
                 "src":dataset["src"][start:end], # [B,1]
                 "tar":dataset["tar"][start:end], # [B,1]
                 "n_mask":dataset["n_mask"][start:end], # [B,N]
