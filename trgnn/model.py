@@ -175,7 +175,7 @@ class TRGNN(nn.Module):
             logit_list: List of [B,1], B는 seq 마다 크기 다를 수 있음
         """
         logit_list=[]
-        num_nodes=data_loader[0]['raw'].size(1)
+        batch_size,num_nodes,_=data_loader[0]['raw'].size()
         memory=torch.zeros(num_nodes,self.latent_dim,dtype=torch.float32,device=device) # [N,latent_dim]
         mem_t=torch.zeros((batch_size,num_nodes,1),dtype=torch.float32,device=device) # [B,N,1], float
         r=data_loader[0]['raw'][0] # [N,1]
