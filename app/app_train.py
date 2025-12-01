@@ -31,9 +31,9 @@ def app_train(config: dict):
             """
             if config['wandb']:
                 if config['model']=='tgn':
-                    wandb.init(project="TRGNN",name=f"{config['model']}_{config['emb']}_{config['seed']}_{config['lr']}_{config['batch_size']}")
+                    wandb.init(project="TR-GNN",name=f"{config['model']}_{config['emb']}_{config['seed']}_{config['lr']}_{config['batch_size']}")
                 else: # tgat, trgnn, trgat
-                    wandb.init(project="TRGNN",name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}")
+                    wandb.init(project="TR-GNN",name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}")
                 wandb.config.update(config)
 
             """

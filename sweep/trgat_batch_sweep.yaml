@@ -1,4 +1,4 @@
-project: TRGNN
+project: TR-GNN
 method: grid
 name: trgat_batch_train
 command:

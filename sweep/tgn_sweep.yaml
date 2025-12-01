@@ -1,4 +1,4 @@
-project: TRGNN
+project: TR-GNN
 method: grid
 name: tgn_train
 command:

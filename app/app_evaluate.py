@@ -18,7 +18,7 @@ def app_evaluate(config:dict):
                 test_500
                 test_1000
             """
-            wandb.init(project="tRGNN",name=f"test_{config['num_nodes']}_result")
+            wandb.init(project="TR-GNN",name=f"test_{config['num_nodes']}_result")
 
             """
             load dataset_list and evaluate
@@ -109,7 +109,7 @@ def app_evaluate(config:dict):
                 test_500
                 test_1000
             """
-            wandb.init(project="tRGNN",name=f"test_{config['num_nodes']}_batch_size_result")
+            wandb.init(project="TR-GNN",name=f"test_{config['num_nodes']}_batch_size_result")
 
             """
             load dataset_list and evaluate
