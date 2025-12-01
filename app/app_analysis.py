@@ -26,9 +26,9 @@ def app_analysis(config:dict):
                     N_list.append(N)
                     E_s_list.append(E_s)
                     E_list.append(E)
-                print(f"{config['mode']}_{config['num_nodes']}_{graph_type} graphs mean of num_nodes: {np.mean(N_list)}")
-                print(f"{config['mode']}_{config['num_nodes']}_{graph_type} graphs mean of num_static_edgs: {np.mean(E_s_list)}")
-                print(f"{config['mode']}_{config['num_nodes']}_{graph_type} graphs mean of num_edge_events: {np.mean(E_list)}")
+                print(f"{config['mode']}_{config['num_nodes']}_{graph_type} graphs num_nodes: {np.mean(N_list)}")
+                print(f"{config['mode']}_{config['num_nodes']}_{graph_type} graphs num_static_edgs mean: {np.mean(E_s_list)} min: {np.min(E_s_list)} max: {np.max(E_s_list)}")
+                print(f"{config['mode']}_{config['num_nodes']}_{graph_type} graphs num_edge_events mean: {np.mean(E_s_list)} min: {np.min(E_s_list)} max: {np.max(E_s_list)}")
                 print()
 
         case 2:
