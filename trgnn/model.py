@@ -94,22 +94,23 @@ class TGN(nn.Module):
             logit_list: List of [B,1], B는 seq 마다 크기 다를 수 있음
         """
         logit_list=[]
-        num_nodes=data_loader[0]['raw'].size(1)
+        batch_size,num_nodes,_=data_loader[0]['raw'].size()
         memory=torch.zeros(num_nodes,self.latent_dim,dtype=torch.float32,device=device) # [N,latent_dim]
+        mem_t=torch.zeros((batch_size,num_nodes,1),dtype=torch.float32,device=device) # [B,N,1], float
         for batch in data_loader:
             batch={k:v.to(device) for k,v in batch.items()}
-            raw=batch['raw'] # [B,N,1], float
             emb_t=batch['emb_t'] # [B,N,1], float
-            mem_t=batch['mem_t'] # [B,N,1], float
+            raw=batch['raw'] # [B,N,1], float
             src=batch['src'] # [B,1], long
             tar=batch['tar'] # [B,1], long
             n_mask=batch['n_mask'] # [B,N,], neighbor node mask
 
             """
-            1. update memory
+            1. update memory using previous batch raw message
             """
             delta_t=self.time_encoder(mem_t) # [B,N,latent_dim]
             updated_memory=self.memory_updater(x=raw,memory=memory,source=src,target=tar,delta_t=delta_t) # [N,latent_dim]
+            mem_t=batch['mem_t'] # [B,N,1], float
 
             """
             2. embedding
@@ -176,12 +177,13 @@ class TRGNN(nn.Module):
         logit_list=[]
         num_nodes=data_loader[0]['raw'].size(1)
         memory=torch.zeros(num_nodes,self.latent_dim,dtype=torch.float32,device=device) # [N,latent_dim]
+        mem_t=torch.zeros((batch_size,num_nodes,1),dtype=torch.float32,device=device) # [B,N,1], float
         r=data_loader[0]['raw'][0] # [N,1]
         r=r.to(device)
         for batch in data_loader:
             batch={k:v.to(device) for k,v in batch.items()}
             emb_t=batch['emb_t'] # [B,N,1], float
-            mem_t=batch['mem_t'] # [B,N,1], float
+            
             src=batch['src'] # [B,1], long
             tar=batch['tar'] # [B,1], long
             n_mask=batch['n_mask'] # [B,N,], neighbor node mask
@@ -194,6 +196,7 @@ class TRGNN(nn.Module):
             """
             delta_t=self.time_encoder(mem_t) # [B,N,latent_dim]
             updated_memory=self.memory_updater(x=r,memory=memory,source=src,target=tar,delta_t=delta_t) # [N,latent_dim]
+            mem_t=batch['mem_t'] # [B,N,1], float
 
             """
             2. embedding
@@ -251,7 +254,6 @@ class TRGAT(nn.Module):
                 batch
                     raw: [B,N,1]
                     emb_t: [B,N,1]
-                    mem_t: [B,N,1]
                     tar: [B,1]
                     n_mask: [B,N,]
             device: GPU
@@ -266,7 +268,6 @@ class TRGAT(nn.Module):
         for batch in data_loader:
             batch={k:v.to(device) for k,v in batch.items()}
             emb_t=batch['emb_t'] # [B,N,1], float
-            mem_t=batch['mem_t'] # [B,N,1], float
             src=batch['src'] # [B,1], long
             tar=batch['tar'] # [B,1], long
             n_mask=batch['n_mask'] # [B,N,], neighbor node mask
