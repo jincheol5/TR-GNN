@@ -250,7 +250,14 @@ class GraphUtils:
             pre_mem_time_table=mem_time_table.clone()
 
             # compute tR step
-            gamma,emb_time_table,mem_time_table=GraphUtils.compute_tR_step(num_nodes=num_nodes,source_id=source_id,edge_event=edge_event,gamma=gamma,time_table=time_table)
+            gamma,emb_time_table,mem_time_table=GraphUtils.compute_tR_step(
+                num_nodes=num_nodes,
+                source_id=source_id,
+                edge_event=edge_event,
+                gamma=gamma,
+                emb_time_table=emb_time_table,
+                mem_time_table=mem_time_table
+            )
             
             src,tar,ts=edge_event
             r_list.append(gamma[:,:1])
