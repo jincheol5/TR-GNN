@@ -321,7 +321,7 @@ class GraphUtils:
         gamma,time_table=GraphUtils.compute_tR_step(num_nodes=num_nodes,source_id=source_id,init=True) # [N,2]
         for i,edge_event in enumerate(event_stream):
             # compute tR step
-            gamma,time_table=GraphUtils.compute_tR_step(num_nodes=num_nodes,source_id=source_id,edge_event=edge_event,gamma=gamma)
+            gamma,time_table=GraphUtils.compute_tR_step(num_nodes=num_nodes,source_id=source_id,edge_event=edge_event,gamma=gamma,time_table=time_table)
             
             src,tar,ts=edge_event
             r_list.append(gamma[:,:1])
