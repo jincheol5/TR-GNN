@@ -247,7 +247,7 @@ class GraphUtils:
         neighbor_history=[torch.zeros(num_nodes,dtype=torch.bool) for _ in range(num_nodes)] # List of [N,]
         gamma,emb_time_table,mem_time_table=GraphUtils.compute_tR_step(num_nodes=num_nodes,source_id=source_id,init=True) # [N,2]
         for i,edge_event in enumerate(event_stream):
-            pre_mem_time_table=emb_time_table.clone()
+            pre_mem_time_table=mem_time_table.clone()
 
             # compute tR step
             gamma,emb_time_table,mem_time_table=GraphUtils.compute_tR_step(num_nodes=num_nodes,source_id=source_id,edge_event=edge_event,gamma=gamma,time_table=time_table)
