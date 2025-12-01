@@ -1,11 +1,5 @@
-import os
-import random
-import numpy as np
 import argparse
-import wandb
-import torch
-from tqdm import tqdm
-from trgnn import DataUtils,GraphUtils,GraphGenerator
+from trgnn import DataUtils,GraphGenerator
 
 def app_data(config: dict):
     match config['app_num']:
@@ -51,6 +45,7 @@ def app_data(config: dict):
             test_20
             test_50
             test_100
+            test_500
             """
             graph_list_dict=DataUtils.load_from_pickle(file_name=f"{config['mode']}_{config['num_nodes']}",dir_type="graph")
             all_graph_list=[]
