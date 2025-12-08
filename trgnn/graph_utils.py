@@ -246,6 +246,7 @@ class GraphUtils:
         neighbor_mask=torch.zeros((num_edge_events,num_nodes),dtype=torch.bool) # [E,N], 각 edge_event에 대한 tar의 neighbor mask
         neighbor_history=[torch.zeros(num_nodes,dtype=torch.bool) for _ in range(num_nodes)] # List of [N,]
         gamma,emb_time_table,mem_time_table=GraphUtils.compute_tR_step(num_nodes=num_nodes,source_id=source_id,init=True) # [N,2]
+        pre_ts=0.0
         for i,edge_event in enumerate(event_stream):
             pre_mem_time_table=mem_time_table.clone()
 
@@ -266,7 +267,7 @@ class GraphUtils:
             emb_t_list.append(torch.abs(interacted_t-ts))
 
             activated_t=pre_mem_time_table.unsqueeze(-1) # [N,1]
-            mem_t_list.append(torch.abs(activated_t-ts))
+            mem_t_list.append(torch.abs(activated_t-pre_ts))
 
             src_list.append(src)
             tar_list.append(tar)
@@ -275,6 +276,8 @@ class GraphUtils:
             neighbor_history[tar][src]=True
             neighbor_mask[i]=neighbor_history[tar] # 참조가 아닌 복사(tensor index 대입)
             n_mask_list.append(neighbor_mask[i])
+
+            pre_ts=ts
         
         # convert to dataset, E = number of edge_events = seq_len
         dataset={}
