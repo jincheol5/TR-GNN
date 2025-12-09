@@ -23,7 +23,8 @@ def app_evaluate(config:dict):
             """
             load dataset_list and evaluate
             """
-            model_list=['tgat','tgn','trgnn','trgat']
+            # model_list=['tgat','tgn','trgnn','trgat']
+            model_list=['tgat','tgn','trgnn']
             seed_list=[1,2,3]
             lr_list=[0.001,0.0005]
             batch_size=16
@@ -72,10 +73,10 @@ def app_evaluate(config:dict):
                                     model_name=f"trgnn_{seed}_{lr}_{batch_size}"
                                     trained_model=TRGNN(node_dim=1,latent_dim=latent_dim)
                                     trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
-                                case 'trgat':
-                                    model_name=f"trgat_{seed}_{lr}_{batch_size}"
-                                    trained_model=TRGAT(node_dim=1,latent_dim=latent_dim)
-                                    trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
+                                # case 'trgat':
+                                #     model_name=f"trgat_{seed}_{lr}_{batch_size}"
+                                #     trained_model=TRGAT(node_dim=1,latent_dim=latent_dim)
+                                #     trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
                             
                             if config['num_nodes']<1000: # 20,50,100,500
                                 acc,macrof1,auroc,prauc,mcc=ModelTrainer.test(model=trained_model,data_loader_list=test_data_loader_list)
@@ -114,7 +115,8 @@ def app_evaluate(config:dict):
             """
             load dataset_list and evaluate
             """
-            model_list=['tgn','trgnn','trgat']
+            # model_list=['tgn','trgnn','trgat']
+            model_list=['tgn','trgnn']
             batch_size_list=[4,8,16,32,64]
             emb='attn'
             seed=1
@@ -157,10 +159,10 @@ def app_evaluate(config:dict):
                             model_name=f"trgnn_{seed}_{lr}_{batch_size}"
                             trained_model=TRGNN(node_dim=1,latent_dim=latent_dim)
                             trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
-                        case 'trgat':
-                            model_name=f"trgat_{seed}_{lr}_{batch_size}"
-                            trained_model=TRGAT(node_dim=1,latent_dim=latent_dim)
-                            trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
+                        # case 'trgat':
+                        #     model_name=f"trgat_{seed}_{lr}_{batch_size}"
+                        #     trained_model=TRGAT(node_dim=1,latent_dim=latent_dim)
+                        #     trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
 
                     if config['num_nodes']<1000: # 20,50,100,500
                         acc,macrof1,auroc,prauc,mcc=ModelTrainer.test(model=trained_model,data_loader_list=test_data_loader_list)
