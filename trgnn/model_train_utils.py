@@ -82,30 +82,30 @@ class EarlyStopping:
     def __init__(self,patience=1):
         self.patience=patience
         self.patience_count=0
-        self.prev_loss=np.inf
+        self.prev_acc=np.inf
         self.best_state=None
         self.early_stop=False
-    def __call__(self,val_loss:float,model:torch.nn.Module):
-        if self.prev_loss==np.inf:
-            self.prev_loss=val_loss
+    def __call__(self,val_acc:float,model:torch.nn.Module):
+        if self.prev_acc==np.inf:
+            self.prev_acc=val_acc
             self.best_state={k: v.clone() for k,v in model.state_dict().items()}
             return None
         else:
-            if not np.isfinite(val_loss):
-                print(f"Loss is NaN or Inf!")
+            if not np.isfinite(val_acc):
+                print(f"Acc is NaN or Inf!")
                 self.early_stop=True
                 model.load_state_dict(self.best_state)
                 return model
             
-            if self.prev_loss<=val_loss:
+            if self.prev_acc>=val_acc:
                 self.patience_count+=1
                 if self.patience<self.patience_count:
-                    print(f"Loss increases during {self.patience_count} patience!")
+                    print(f"Acc decreases during {self.patience_count} patience!")
                     self.early_stop=True
                     model.load_state_dict(self.best_state)
                     return model
             else:
                 self.patience_count=0
-                self.prev_loss=val_loss
+                self.prev_acc=val_acc
                 self.best_state={k: v.clone() for k,v in model.state_dict().items()}
                 return None

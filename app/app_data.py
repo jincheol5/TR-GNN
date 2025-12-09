@@ -52,13 +52,13 @@ def app_data(config: dict):
             for _,graph_list in graph_list_dict.items():
                 all_graph_list+=graph_list
             match config['mode']:
-                case 'train':
+                case 'train'|'val':
                     DataUtils.save_graph_list_to_dataset_list(
                         graph_list=all_graph_list,
                         num_nodes=config['num_nodes'],
                         dir_type=config['mode']
                     )
-                case 'val'|'test':
+                case 'test':
                     DataUtils.save_graph_list_to_selected_dataset_list(
                         graph_list=all_graph_list,
                         num_nodes=config['num_nodes'],
@@ -73,7 +73,7 @@ def app_data(config: dict):
             graph_list_dict=DataUtils.load_from_pickle(file_name=f"{config['mode']}_{config['num_nodes']}",dir_type="graph")
             graph_list=graph_list_dict[config['graph_type']]
             match config['mode']:
-                case 'train':
+                case 'train'|'val':
                     DataUtils.save_graph_list_to_dataset_list_chunk(
                         graph_list=graph_list,
                         graph_type=config['graph_type'],
@@ -81,7 +81,7 @@ def app_data(config: dict):
                         chunk_size=config['chunk_size'],
                         dir_type=config['mode']
                     )
-                case 'val'|'test':
+                case 'test':
                     DataUtils.save_graph_list_to_selected_dataset_list_chunk(
                         graph_list=graph_list,
                         graph_type=config['graph_type'],

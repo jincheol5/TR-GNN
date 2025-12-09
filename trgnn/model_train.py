@@ -45,18 +45,6 @@ class ModelTrainer:
                 optimizer.step()
             
             epoch_loss=torch.stack(loss_list).mean().item()
-
-            """
-            Early stopping
-            """
-            if config['early_stop']:
-                val_loss=epoch_loss
-                pre_model=early_stop(val_loss=val_loss,model=model)
-                if early_stop.early_stop:
-                    model=pre_model
-                    print(f"Early Stopping in epoch {epoch+1}")
-                    break
-
             """
             wandb log
             """
@@ -71,6 +59,17 @@ class ModelTrainer:
             if validate:
                 acc,macrof1,auroc,prauc,mcc=ModelTrainer.test(model=model,data_loader_list=val_data_loader_list)
                 print(f"{epoch+1} epoch tR validation Acc: {acc} macro-f1: {macrof1} AUROC: {auroc} PR-AUC: {prauc} MCC: {mcc}")
+            
+            """
+            Early stopping
+            """
+            if config['early_stop']:
+                val_acc=acc
+                pre_model=early_stop(val_acc=val_acc,model=model)
+                if early_stop.early_stop:
+                    model=pre_model
+                    print(f"Early Stopping in epoch {epoch+1}")
+                    break
 
     @staticmethod
     def test(model,data_loader_list):
