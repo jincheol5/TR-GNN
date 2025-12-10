@@ -4,17 +4,17 @@ import pandas as pd
 
 def app_result(config:dict):
     api=wandb.Api()
-    run_20=api.run(f"jcoh-research/TR-GNN/m80m38i1")
-    run_50=api.run(f"jcoh-research/TR-GNN/p6tm76op")
-    run_100=api.run(f"jcoh-research/TR-GNN/aefibqkx")
-    run_500=api.run(f"jcoh-research/TR-GNN/qkce9yc6")
-    run_1000=api.run(f"jcoh-research/TR-GNN/p82te0ca")
+    run_20=api.run(f"jcoh-research/TR-GNN/")
+    run_50=api.run(f"jcoh-research/TR-GNN/")
+    run_100=api.run(f"jcoh-research/TR-GNN/idxcr48t")
+    run_500=api.run(f"jcoh-research/TR-GNN/")
+    run_1000=api.run(f"jcoh-research/TR-GNN/")
 
-    run_batch_20=api.run(f"jcoh-research/TR-GNN/er30qptb")
-    run_batch_50=api.run(f"jcoh-research/TR-GNN/0uhyp30e")
-    run_batch_100=api.run(f"jcoh-research/TR-GNN/qq2ywvhc")
-    run_batch_500=api.run(f"jcoh-research/TR-GNN/yulf5xzl")
-    run_batch_1000=api.run(f"jcoh-research/TR-GNN/b4lsbp7q")
+    run_batch_20=api.run(f"jcoh-research/TR-GNN/")
+    run_batch_50=api.run(f"jcoh-research/TR-GNN/")
+    run_batch_100=api.run(f"jcoh-research/TR-GNN/")
+    run_batch_500=api.run(f"jcoh-research/TR-GNN/")
+    run_batch_1000=api.run(f"jcoh-research/TR-GNN/")
 
     match config['app_num']:
         case 1:
