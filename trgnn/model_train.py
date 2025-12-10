@@ -63,9 +63,15 @@ class ModelTrainer:
             """
             Early stopping
             """
+            # if config['early_stop']:
+            #     val_acc=acc
+            #     pre_model=early_stop(val_acc=val_acc,model=model)
+            #     if early_stop.early_stop:
+            #         model=pre_model
+            #         print(f"Early Stopping in epoch {epoch+1}")
+            #         break
             if config['early_stop']:
-                val_acc=acc
-                pre_model=early_stop(val_acc=val_acc,model=model)
+                pre_model=early_stop(val_loss=epoch_loss,model=model)
                 if early_stop.early_stop:
                     model=pre_model
                     print(f"Early Stopping in epoch {epoch+1}")
