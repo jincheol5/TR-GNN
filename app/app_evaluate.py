@@ -23,8 +23,8 @@ def app_evaluate(config:dict):
             """
             load dataset_list and evaluate
             """
-            model_list=['tgat','tgn','trgnn','trgat']
-            # model_list=['tgat','tgn','trgnn']
+            # model_list=['tgat','tgn','trgnn','trgat']
+            model_list=['tgat','tgn','trgnn']
             seed_list=[1,2,3]
             lr_list=[0.001,0.0005]
             batch_size=16
@@ -115,8 +115,8 @@ def app_evaluate(config:dict):
             """
             load dataset_list and evaluate
             """
-            model_list=['tgn','trgnn','trgat']
-            # model_list=['tgn','trgnn']
+            # model_list=['tgn','trgnn','trgat']
+            model_list=['tgn','trgnn']
             batch_size_list=[4,8,16,32,64]
             emb='attn'
             seed=1
@@ -151,7 +151,6 @@ def app_evaluate(config:dict):
                     """
                     match model:
                         case 'tgn':
-                            
                             model_name=f"tgn_{emb}_{seed}_{lr}_{batch_size}"
                             trained_model=TGN(node_dim=1,latent_dim=latent_dim,emb=emb)
                             trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
