@@ -2,6 +2,7 @@ import random
 import numpy as np
 import networkx as nx
 import torch
+from typing_extensions import Literal
 from tqdm import tqdm
 
 class GraphGenerator:
@@ -29,7 +30,7 @@ class GraphGenerator:
         graph.remove_edges_from(remove_edges)
     
     @staticmethod
-    def generate_7_type_graphs(num_graphs:int,num_nodes:int,num_times:int):
+    def generate_7_type_graph(graph_type:Literal['ladder','grid','tree','erdos_renyi','barabasi_albert','community','caveman'],num_nodes:Literal[20,50,100,500,1000],num_times:int=5):
         """
         <<Generate 7-type graphs>>
         1. ladder graph
@@ -40,134 +41,95 @@ class GraphGenerator:
         6. 4-community graph
         7. 4-caveman graph
         """
+        match graph_type:
+            case 'ladder':
+                if num_nodes%2!=0:
+                    raise ValueError("ladder graph requires an even number of nodes.")
+                graph=nx.ladder_graph(num_nodes//2)
+                GraphGenerator.remove_self_loop(graph=graph)
+                graph=graph.to_directed()
+                GraphGenerator.set_edge_time_attr(graph=graph,num_times=num_times)
+            case 'grid':
+                side_length=int(np.ceil(np.sqrt(num_nodes)))
+                graph=nx.grid_2d_graph(side_length,side_length)
+                graph=nx.convert_node_labels_to_integers(graph)
+                graph=graph.subgraph(range(num_nodes)).copy()
+                GraphGenerator.remove_self_loop(graph=graph)
+                graph=graph.to_directed()
+                GraphGenerator.set_edge_time_attr(graph=graph,num_times=num_times)
+            case 'tree':
+                graph=nx.random_tree(num_nodes)
+                GraphGenerator.remove_self_loop(graph=graph)
+                graph=graph.to_directed()
+                GraphGenerator.set_edge_time_attr(graph=graph,num_times=num_times)
+            case 'erdos_renyi':
+                p=min(np.log2(num_nodes)/num_nodes,0.5)
+                graph=nx.erdos_renyi_graph(num_nodes,p)
+                GraphGenerator.remove_self_loop(graph=graph)
+                graph=graph.to_directed()
+                if num_nodes>=500:
+                    GraphGenerator.remove_random_edges(graph=graph,ratio=0.7)
+                else:
+                    GraphGenerator.remove_random_edges(graph=graph,ratio=0.5)
+                GraphGenerator.set_edge_time_attr(graph=graph,num_times=num_times)
+            case 'barabasi_albert':
+                if num_nodes<=4:
+                    raise ValueError("barabasi_albert graph requires more than 4 number of nodes.")
+                m=random.choice([4,5])
+                graph=nx.barabasi_albert_graph(num_nodes,m)
+                GraphGenerator.remove_self_loop(graph=graph)
+                graph=graph.to_directed()
+                GraphGenerator.remove_random_edges(graph=graph,ratio=0.7)
+                GraphGenerator.set_edge_time_attr(graph=graph,num_times=num_times)
+            case 'community':
+                if num_nodes<4:
+                    raise ValueError("4-Community graph requires at least 4 nodes.")
+                community_size=num_nodes//4
+                remaining_nodes=num_nodes%4
+                communities=[nx.erdos_renyi_graph(community_size,0.1) for _ in range(4)]
+                graph=nx.disjoint_union_all(communities)
+                for i in range(remaining_nodes):
+                    graph.add_node(graph.number_of_nodes())
+                nodes=list(graph.nodes())
+                for i in range(len(nodes)):
+                    for j in range(i+1,len(nodes)):
+                        if (i//community_size)!=(j//community_size):
+                            if random.random()<0.01:
+                                graph.add_edge(i,j)
+                GraphGenerator.remove_self_loop(graph=graph)
+                graph=graph.to_directed()
+                if num_nodes>=500:
+                    GraphGenerator.remove_random_edges(graph=graph,ratio=0.7)
+                GraphGenerator.set_edge_time_attr(graph=graph,num_times=num_times)
+            case 'caveman':
+                if num_nodes<4:
+                    raise ValueError("4-Caveman graph requires at least 4 nodes.")
+                clique_size=num_nodes//4
+                remaining_nodes=num_nodes%4
+                graph=nx.caveman_graph(4,clique_size)
+                for i in range(remaining_nodes):
+                    graph.add_node(graph.number_of_nodes())
+                edges_to_remove=[edge for edge in graph.edges() if random.random()<0.8]
+                graph.remove_edges_from(edges_to_remove)
+                num_shortcuts=int(0.025*num_nodes)
+                for _ in range(num_shortcuts):
+                    u,v=random.sample(list(graph.nodes()),2)
+                    if not graph.has_edge(u,v):
+                        graph.add_edge(u,v)
+                GraphGenerator.remove_self_loop(graph=graph)
+                graph=graph.to_directed()
+                if num_nodes>=500:
+                    GraphGenerator.remove_random_edges(graph=graph,ratio=0.7)
+                GraphGenerator.set_edge_time_attr(graph=graph,num_times=num_times)
+        return graph
 
-        ladder_graph_list=[]
-        grid_graph_list=[]
-        tree_graph_list=[]
-        Erdos_Renyi_graph_list=[]
-        Barabasi_Albert_graph_list=[]
-        community_graph_list=[]
-        caveman_graph_list=[]
-
-        # generate
+    @staticmethod
+    def generate_7_type_graph_list(num_graphs:int,graph_type:Literal['ladder','grid','tree','erdos_renyi','barabasi_albert','community','caveman'],num_nodes:Literal[20,50,100,500,1000],num_times:int=5):
+        graph_list=[]
         for _ in tqdm(range(num_graphs),desc=f"generate graph..."):
-            """
-            1. generate ladder graph
-            """
-            if num_nodes%2!=0:
-                raise ValueError("ladder graph requires an even number of nodes.")
-            ladder_graph=nx.ladder_graph(num_nodes//2)
-            GraphGenerator.remove_self_loop(graph=ladder_graph)
-            ladder_graph=ladder_graph.to_directed()
-            GraphGenerator.set_edge_time_attr(graph=ladder_graph,num_times=num_times)
-            ladder_graph_list.append(ladder_graph)
+            graph_list.append(GraphGenerator.generate_7_type_graph(graph_type=graph_type,num_nodes=num_nodes,num_times=num_times))
+        return graph_list
 
-            """
-            2. generate 2D grid graph
-            """
-            side_length=int(np.ceil(np.sqrt(num_nodes)))
-            grid_graph=nx.grid_2d_graph(side_length,side_length)
-            grid_graph=nx.convert_node_labels_to_integers(grid_graph)
-            grid_graph=grid_graph.subgraph(range(num_nodes)).copy()
-            GraphGenerator.remove_self_loop(graph=grid_graph)
-            grid_graph=grid_graph.to_directed()
-            GraphGenerator.set_edge_time_attr(graph=grid_graph,num_times=num_times)
-            grid_graph_list.append(grid_graph)
-
-            
-            """
-            3. generate tree graph
-            """
-            tree_graph=nx.random_tree(num_nodes)
-            GraphGenerator.remove_self_loop(graph=tree_graph)
-            tree_graph=tree_graph.to_directed()
-            GraphGenerator.set_edge_time_attr(graph=tree_graph,num_times=num_times)
-            tree_graph_list.append(tree_graph)
-
-            """
-            4. generate Erdos-Renyi graph
-            """
-            p=min(np.log2(num_nodes)/num_nodes,0.5)
-            erdos_renyi_graph=nx.erdos_renyi_graph(num_nodes,p)
-            GraphGenerator.remove_self_loop(graph=erdos_renyi_graph)
-            erdos_renyi_graph=erdos_renyi_graph.to_directed()
-            if num_nodes>=500:
-                GraphGenerator.remove_random_edges(graph=erdos_renyi_graph,ratio=0.7)
-            else:
-                GraphGenerator.remove_random_edges(graph=erdos_renyi_graph,ratio=0.5)
-            GraphGenerator.set_edge_time_attr(graph=erdos_renyi_graph,num_times=num_times)
-            Erdos_Renyi_graph_list.append(erdos_renyi_graph)
-
-            """
-            5. generate Barabasi-Albert graph
-            """
-            if num_nodes<=4:
-                raise ValueError("barabasi_albert graph requires more than 4 number of nodes.")
-            m=random.choice([4,5])
-            barabasi_albert_graph=nx.barabasi_albert_graph(num_nodes,m)
-            GraphGenerator.remove_self_loop(graph=barabasi_albert_graph)
-            barabasi_albert_graph=barabasi_albert_graph.to_directed()
-            GraphGenerator.remove_random_edges(graph=barabasi_albert_graph,ratio=0.7)
-            GraphGenerator.set_edge_time_attr(graph=barabasi_albert_graph,num_times=num_times)
-            Barabasi_Albert_graph_list.append(barabasi_albert_graph)
-            
-            """
-            6. generate 4 community graph
-            """
-            if num_nodes<4:
-                raise ValueError("4-Community graph requires at least 4 nodes.")
-            community_size=num_nodes//4
-            remaining_nodes=num_nodes%4
-            communities=[nx.erdos_renyi_graph(community_size,0.1) for _ in range(4)]
-            community_graph=nx.disjoint_union_all(communities)
-            for i in range(remaining_nodes):
-                community_graph.add_node(community_graph.number_of_nodes())
-            nodes=list(community_graph.nodes())
-            for i in range(len(nodes)):
-                for j in range(i+1,len(nodes)):
-                    if (i//community_size)!=(j//community_size):
-                        if random.random()<0.01:
-                            community_graph.add_edge(i,j)
-            GraphGenerator.remove_self_loop(graph=community_graph)
-            community_graph=community_graph.to_directed()
-            if num_nodes>=500:
-                GraphGenerator.remove_random_edges(graph=community_graph,ratio=0.7)
-            GraphGenerator.set_edge_time_attr(graph=community_graph,num_times=num_times)
-            community_graph_list.append(community_graph)
-        
-            """
-            7. generate 4-caveman graph
-            """
-            if num_nodes<4:
-                raise ValueError("4-Caveman graph requires at least 4 nodes.")
-            clique_size=num_nodes//4
-            remaining_nodes=num_nodes%4
-            caveman_graph=nx.caveman_graph(4,clique_size)
-            for i in range(remaining_nodes):
-                caveman_graph.add_node(caveman_graph.number_of_nodes())
-            edges_to_remove=[edge for edge in caveman_graph.edges() if random.random()<0.8]
-            caveman_graph.remove_edges_from(edges_to_remove)
-            num_shortcuts=int(0.025*num_nodes)
-            for _ in range(num_shortcuts):
-                u,v=random.sample(list(caveman_graph.nodes()),2)
-                if not caveman_graph.has_edge(u,v):
-                    caveman_graph.add_edge(u,v)
-            GraphGenerator.remove_self_loop(graph=caveman_graph)
-            caveman_graph=caveman_graph.to_directed()
-            if num_nodes>=500:
-                GraphGenerator.remove_random_edges(graph=caveman_graph,ratio=0.7)
-            GraphGenerator.set_edge_time_attr(graph=caveman_graph,num_times=num_times)
-            caveman_graph_list.append(caveman_graph)
-
-        graph_list_dict={}
-        graph_list_dict['ladder']=ladder_graph_list
-        graph_list_dict['grid']=grid_graph_list
-        graph_list_dict['tree']=tree_graph_list
-        graph_list_dict['erdos_renyi']=Erdos_Renyi_graph_list
-        graph_list_dict['barabasi_albert']=Barabasi_Albert_graph_list
-        graph_list_dict['community']=community_graph_list
-        graph_list_dict['caveman']=caveman_graph_list
-        return graph_list_dict
 
 class GraphUtils:
     @staticmethod
@@ -193,7 +155,7 @@ class GraphUtils:
             event_stream: sorted tuple list (src,tar,ts)
             num_nodes: number of nodes
         Output:
-            data_stream: dict 
+            datastream: dict 
                 mem_t: [E,N,1], delta_t for memory update -> |current_time-previous_activated_time (with any nodes)| of each node
                 emb_t: [E,N,1], delta_t for embedding -> |current_time-previous_interaction_time (with target node)| of target node
                 src: [E,1], source id
