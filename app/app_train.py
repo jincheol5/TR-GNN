@@ -87,14 +87,14 @@ def app_train(config: dict):
             for graph_type in tqdm(graph_type_list,desc=f"Load datasets..."):
                 for graph_id in range(5):
                     datastream=DataUtils.load_from_pickle(
-                        file_name=f"{config['mode']}_{config['num_nodes']}_{graph_type}_{graph_id}_datastream",
+                        file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_datastream",
                         dir_type=f"dataset",
                         mode=config['mode'],
                         num_nodes=config['num_nodes'],
                         is_print=False
                     )
                     src_list=DataUtils.load_from_pickle(
-                        file_name=f"{config['mode']}_{config['num_nodes']}_{graph_type}_{graph_id}_src_list",
+                        file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_src_list",
                         dir_type=f"dataset",
                         mode=config['mode'],
                         num_nodes=config['num_nodes'],
@@ -102,7 +102,7 @@ def app_train(config: dict):
                     )
                     for src in src_list:
                         traj=DataUtils.load_from_pickle(
-                            file_name=f"{config['mode']}_{config['num_nodes']}_{graph_type}_{graph_id}_traj_{src}",
+                            file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_traj_{src}",
                             dir_type=f"dataset",
                             mode=config['mode'],
                             num_nodes=config['num_nodes'],
