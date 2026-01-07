@@ -15,18 +15,17 @@ class TGAT(nn.Module):
     def forward(self,batch,device):
         """
         Input:
-            data_loader: list of batch
-                batch: dict
-                    init_traj: [N,1]
-                    traj: [B,N,1]
-                    emb_t: [B,N,1]
-                    mem_t: [B,N,1]
-                    src: [B,1]
-                    tar: [B,1]
-                    n_mask: [B,N]
-                    label: [B,1]
+            batch: dict
+                init_traj: [N,1]
+                traj: [B,N,1]
+                emb_t: [B,N,1]
+                mem_t: [B,N,1]
+                src: [B,1]
+                tar: [B,1]
+                n_mask: [B,N]
+                label: [B,1]
         Output:
-            logit_list: List of [B,1], B는 seq 마다 크기 다를 수 있음
+            logit: [B,1], B는 seq 마다 크기 다를 수 있음
         """
         batch_size,num_nodes,_=batch['traj'].size()
         raw=torch.zeros((batch_size,num_nodes,self.latent_dim),device=device) # [B,N,latent_dim], node raw feature
