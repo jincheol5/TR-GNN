@@ -7,10 +7,6 @@ from tqdm import tqdm
 
 class GraphGenerator:
     @staticmethod
-    def remove_self_loop(graph:nx.Graph):
-        graph.remove_edges_from(nx.selfloop_edges(graph))
-
-    @staticmethod
     def set_edge_time_attr(graph:nx.DiGraph,num_times:int):
         for src,tar in graph.edges():
             if src==tar:
@@ -20,7 +16,11 @@ class GraphGenerator:
                 timestamps=np.random.uniform(0.2,1.0,size=timestamp_num)
                 timestamps=np.sort(timestamps).tolist() 
                 graph[src][tar]['t']=timestamps
-    
+
+    @staticmethod
+    def remove_self_loop(graph:nx.Graph):
+        graph.remove_edges_from(nx.selfloop_edges(graph))
+
     @staticmethod
     def remove_random_edges(graph:nx.DiGraph,ratio:float=0.3):
         edges=[(u,v) for u,v in graph.edges() if u!=v]

@@ -28,13 +28,13 @@ def app_data(config: dict):
             if config['mode']=="test":
                 graph_type_list=['ladder','grid','tree','erdos_renyi','barabasi_albert','community','caveman']
                 for graph_type in graph_type_list:
-                    graph_list=GraphGenerator.generate_7_type_graph_list(num_graphs=config['num_graphs'],graph_type=graph_type,num_nodes=config['num_nodes'],num_times=config['num_time'])
+                    graph_list=GraphGenerator.generate_7_type_graph_list(num_graphs=config['num_graphs'],graph_type=graph_type,num_nodes=config['num_nodes'],num_times=config['num_times'])
                     DataUtils.save_to_pickle(data=graph_list,file_name=f"{config['mode']}_{config['num_nodes']}_{graph_type}_list",dir_type="graph",mode=config['mode'],num_nodes=config['num_nodes'])
             else: # train,val
                 all_graph_list=[]
                 graph_type_list=['ladder','grid','tree','erdos_renyi','barabasi_albert','community','caveman']
                 for graph_type in graph_type_list:
-                    graph_list=GraphGenerator.generate_7_type_graph_list(num_graphs=config['num_graphs'],graph_type=graph_type,num_nodes=config['num_nodes'],num_times=config['num_time'])
+                    graph_list=GraphGenerator.generate_7_type_graph_list(num_graphs=config['num_graphs'],graph_type=graph_type,num_nodes=config['num_nodes'],num_times=config['num_times'])
                     all_graph_list+=graph_list
                 DataUtils.save_to_pickle(data=all_graph_list,file_name=f"{config['mode']}_{config['num_nodes']}_list",dir_type="graph",mode=config['mode'],num_nodes=config['num_nodes'])
 
@@ -62,7 +62,7 @@ def app_data(config: dict):
             """
             if config['mode']=="test":
                 graph_type_list=['ladder','grid','tree','erdos_renyi','barabasi_albert','community','caveman']
-                for graph_type in graph_type_list:
+                for graph_type in tqdm(graph_type_list,desc=f"Convert test graphs to dataset..."):
                     graph_list=DataUtils.load_from_pickle(file_name=f"{config['mode']}_{config['num_nodes']}_{graph_type}_list",dir_type=f"graph",mode=config['mode'],num_nodes=config['num_nodes'])
                     for graph_id,graph in enumerate(graph_list):
                         eventstream=GraphUtils.get_eventstream(graph=graph)
@@ -78,7 +78,7 @@ def app_data(config: dict):
                 all_graph_list=DataUtils.load_from_pickle(file_name=f"{config['mode']}_{config['num_nodes']}_list",dir_type=f"graph",mode=config['mode'],num_nodes=config['num_nodes'])
                 all_datastream_list=[]
                 all_trajs_list=[]
-                for graph in all_graph_list:
+                for graph in tqdm(all_graph_list,desc=f"Convert {config['mode']} graphs to dataset"):
                     eventstream=GraphUtils.get_eventstream(graph=graph)
                     datastream=GraphUtils.compute_datastream_from_eventstream(eventstream=eventstream,num_nodes=config['num_nodes'])
                     trajs=[]

@@ -61,9 +61,7 @@ def app_train(config: dict):
                 case 'tgn':
                     model=TGN(traj_dim=1,latent_dim=config['latent_dim'],emb=config['emb'])
                     is_memory=True
-
-            for train_data_loader in train_data_loader_list:
-                ModelTrainer.train(model=model,is_memory=is_memory,train_data_loader=train_data_loader,val_data_loader_list=val_data_loader_list,validate=True,config=config)
+            ModelTrainer.train(model=model,is_memory=is_memory,train_data_loader_list=train_data_loader_list,val_data_loader_list=val_data_loader_list,config=config)
             
             if config['wandb']:
                 wandb.finish()
@@ -127,8 +125,7 @@ if __name__=="__main__":
         # 학습 로그 및 저장
         'wandb':args.wandb,
         'save_model':args.save_model,
-        # dataset
-        'dataset_name':args.dataset_name,
-        'source_id':args.source_id
+        # 평가
+        'num_nodes':args.num_nodes
     }
     app_train(config=config)

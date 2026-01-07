@@ -8,7 +8,7 @@ import gzip
 import io
 
 class DataUtils:
-    dir_path=os.path.join('..','data','tr-gnn')
+    dir_path=os.path.join('..','data','tr_gnn')
     @staticmethod
     def save_to_pickle(data,file_name:str,dir_type:Literal['graph','dataset'],mode:Literal['train','val','test']='train',num_nodes:Literal[20,50,100,500,1000]=20,is_snap:bool=False):
         file_name=file_name+".pkl"
@@ -23,7 +23,7 @@ class DataUtils:
         print(f"Save {file_name}")
     
     @staticmethod
-    def load_from_pickle(file_name:str,dir_type:Literal['graph','dataset'],mode:Literal['train','val','test']='train',num_nodes:Literal[20,50,100,500,1000]=20,is_snap:bool=False):
+    def load_from_pickle(file_name:str,dir_type:Literal['graph','dataset'],mode:Literal['train','val','test']='train',num_nodes:Literal[20,50,100,500,1000]=20,is_snap:bool=False,is_print:bool=True):
         file_name=file_name+".pkl"
         file_path=os.path.join(DataUtils.dir_path,dir_type,mode,file_name)
         if mode=='test':
@@ -33,7 +33,8 @@ class DataUtils:
                 file_path=os.path.join(DataUtils.dir_path,dir_type,mode,f"{num_nodes}",file_name)
         with open(file_path,'rb') as f:
             data=pickle.load(f)
-        print(f"Load {file_name}")
+        if is_print:
+            print(f"Load {file_name}")
         return data
     
     @staticmethod

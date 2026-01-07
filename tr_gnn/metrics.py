@@ -45,19 +45,26 @@ class Metrics:
         # 2) 예측 레이블(positive=1, negative=0)
         pred_label=(logit_all>=threshold).float()
 
+        # count positive / negative samples in target
+        num_pos=int((label_all==1).sum().item())
+        num_neg=int((label_all==0).sum().item())
+
         # --- Positive class F1 ---
-        f1_pos=binary_f1_score(logit_all,label_all,threshold=threshold)
+        if num_pos==0:
+            f1_pos=0.0
+        else:
+            f1_pos_tensor=binary_f1_score(logit_all,label_all,threshold=threshold)
+            f1_pos=f1_pos_tensor.item()
 
         # --- Negative class F1 ---
-        inv_pred=1-pred_label # negative=1로 취급
-        inv_label=1-label_all # negative=1로 취급
-
-        # negative class에 대한 F1 (positive 역할을 바꿔서 계산)
-        f1_neg=binary_f1_score(inv_pred,inv_label,threshold=0.5)
-
-        # 3) macro-F1 = (F1_pos + F1_neg) / 2
-        f1_pos=f1_pos.item()
-        f1_neg=f1_neg.item()
+        if num_neg==0:
+            f1_neg=0.0
+        else:
+            inv_pred=1-pred_label # negative=1로 취급
+            inv_label=1-label_all # negative=1로 취급
+            # negative class에 대한 F1 (positive 역할을 바꿔서 계산)
+            f1_neg_tensor=binary_f1_score(inv_pred,inv_label,threshold=0.5)
+            f1_neg=f1_neg_tensor.item()
 
         # nan 방지 처리
         if math.isnan(f1_pos):
