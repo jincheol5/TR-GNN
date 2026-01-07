@@ -92,9 +92,9 @@ def app_analysis(config:dict):
                             TR_ratio=GraphAnalysis.check_tR_ratio(r=traj)
                             TR_ratio_list.append(TR_ratio)
                         all_TR_ratio_list+=TR_ratio_list
-                    TR_ratio_dict[graph_type]=np.mean(all_TR_ratio_list)
-                for graph_type,TR_ratio in TR_ratio_dict.items():
-                    print(f"{config['mode']}_{config['num_nodes']}_{graph_type} mean TR ratio: {TR_ratio}")
+                    TR_ratio_dict[graph_type]=all_TR_ratio_list
+                for graph_type,TR_ratio_list in TR_ratio_dict.items():
+                    print(f"{config['mode']}_{config['num_nodes']}_{graph_type} TR ratio MEAN: {np.mean(TR_ratio_list)} MAX: {np.max(TR_ratio_list)} MIN: {np.min(TR_ratio_list)}")
             else: # train, val
                 print(f"<<Check {config['mode']}_{config['num_nodes']} TR ratio>>")
                 all_trajs_list=DataUtils.load_from_pickle(
@@ -111,7 +111,7 @@ def app_analysis(config:dict):
                         TR_ratio=GraphAnalysis.check_tR_ratio(r=traj)
                         TR_ratio_list.append(TR_ratio)
                     all_TR_ratio_list+=TR_ratio_list
-                print(f"{config['mode']}_{config['num_nodes']} mean TR ratio: {np.mean(all_TR_ratio_list)}")
+                print(f"{config['mode']}_{config['num_nodes']} TR ratio MEAN: {np.mean(all_TR_ratio_list)} MAX: {np.max(all_TR_ratio_list)} MIN: {np.min(all_TR_ratio_list)}")
 
 if __name__=="__main__":
     """

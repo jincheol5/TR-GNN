@@ -86,14 +86,10 @@ class ModelTrainer:
         """
         model test
         """
-        acc_list=[]
-        macrof1_list=[]
-        prauc_list=[]
-        mcc_list=[]
+        all_logit_list=[]
+        all_label_list=[]
         with torch.no_grad():
             for data_loader in tqdm(data_loader_list,desc=f"Evaluating..."):
-                logit_list=[]
-                label_list=[]
                 memory=None
                 for batch in data_loader:
                     # move batch tensors to device so model and metrics use same device
@@ -102,16 +98,12 @@ class ModelTrainer:
                         logit,memory=model(batch=batch,pre_memory=memory,device=device)
                     else:
                         logit=model(batch=batch,device=device)
-                    logit_list.append(logit)
-                    label_list.append(batch['label'])
-                acc_list.append(Metrics.compute_TR_acc(logit_list=logit_list,label_list=label_list))
-                macrof1_list.append(Metrics.compute_TR_macroF1(logit_list=logit_list,label_list=label_list))
-                prauc_list.append(Metrics.compute_TR_PRAUC(logit_list=logit_list,label_list=label_list))
-                mcc_list.append(Metrics.compute_TR_MCC(logit_list=logit_list,label_list=label_list))
+                    all_logit_list.append(logit)
+                    all_label_list.append(batch['label'])
         perform={
-            'acc':np.mean(acc_list),
-            'macrof1':np.mean(macrof1_list),
-            'prauc':np.mean(prauc_list),
-            'mcc':np.mean(mcc_list)
+            'acc':Metrics.compute_TR_acc(logit_list=all_logit_list,label_list=all_label_list),
+            'macrof1':Metrics.compute_TR_macroF1(logit_list=all_logit_list,label_list=all_label_list),
+            'prauc':Metrics.compute_TR_PRAUC(logit_list=all_logit_list,label_list=all_label_list),
+            'mcc':Metrics.compute_TR_MCC(logit_list=all_logit_list,label_list=all_label_list)
         }
         return perform

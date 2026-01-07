@@ -76,6 +76,56 @@ def app_train(config: dict):
                         model_name=f"{config['model']}_{config['emb']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
                         DataUtils.save_model_parameter(model=model,model_name=model_name)
 
+        case 2:
+            """
+            App 2.
+            test model
+            """
+            ### data load
+            test_data_loader_list=[]
+            graph_type_list=['ladder','grid','tree','erdos_renyi','barabasi_albert','community','caveman']
+            for graph_type in tqdm(graph_type_list,desc=f"Load datasets..."):
+                for graph_id in range(5):
+                    datastream=DataUtils.load_from_pickle(
+                        file_name=f"{config['mode']}_{config['num_nodes']}_{graph_type}_{graph_id}_datastream",
+                        dir_type=f"dataset",
+                        mode=config['mode'],
+                        num_nodes=config['num_nodes'],
+                        is_print=False
+                    )
+                    src_list=DataUtils.load_from_pickle(
+                        file_name=f"{config['mode']}_{config['num_nodes']}_{graph_type}_{graph_id}_src_list",
+                        dir_type=f"dataset",
+                        mode=config['mode'],
+                        num_nodes=config['num_nodes'],
+                        is_print=False
+                    )
+                    for src in src_list:
+                        traj=DataUtils.load_from_pickle(
+                            file_name=f"{config['mode']}_{config['num_nodes']}_{graph_type}_{graph_id}_traj_{src}",
+                            dir_type=f"dataset",
+                            mode=config['mode'],
+                            num_nodes=config['num_nodes'],
+                            is_print=False
+                        )
+                        test_data_loader=ModelTrainUtils.get_data_loader(datastream=datastream,traj=traj,source_id=src,batch_size=config['batch_size'])
+                        test_data_loader_list.append(test_data_loader)
+            
+            ### model test
+            is_memory=False
+            match config['model']:
+                case 'tgat':
+                    model_name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
+                    model=TGAT(traj_dim=1,latent_dim=config['latent_dim'])
+                    model=DataUtils.load_model_parameter(model=model,model_name=model_name)
+                case 'tgn':
+                    model_name=f"{config['model']}_{config['emb']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
+                    model=TGN(traj_dim=1,latent_dim=config['latent_dim'],emb=config['emb'])
+                    model=DataUtils.load_model_parameter(model=model,model_name=model_name)
+                    is_memory=True
+            perform=ModelTrainer.test(model=model,is_memory=is_memory,data_loader_list=test_data_loader_list)
+            print(f"Evaluate {model_name} TR Acc: {perform['acc']} Macro-f1: {perform['macrof1']} PR-AUC: {perform['prauc']} MCC: {perform['mcc']}")
+
 
 if __name__=="__main__":
     """
