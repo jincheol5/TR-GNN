@@ -89,14 +89,14 @@ def app_train(config: dict):
                     datastream=DataUtils.load_from_pickle(
                         file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_datastream",
                         dir_type=f"dataset",
-                        mode=config['mode'],
+                        mode="test",
                         num_nodes=config['num_nodes'],
                         is_print=False
                     )
                     src_list=DataUtils.load_from_pickle(
                         file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_src_list",
                         dir_type=f"dataset",
-                        mode=config['mode'],
+                        mode="test",
                         num_nodes=config['num_nodes'],
                         is_print=False
                     )
@@ -104,7 +104,7 @@ def app_train(config: dict):
                         traj=DataUtils.load_from_pickle(
                             file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_traj_{src}",
                             dir_type=f"dataset",
-                            mode=config['mode'],
+                            mode="test",
                             num_nodes=config['num_nodes'],
                             is_print=False
                         )
