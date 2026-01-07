@@ -130,7 +130,6 @@ class GraphGenerator:
             graph_list.append(GraphGenerator.generate_7_type_graph(graph_type=graph_type,num_nodes=num_nodes,num_times=num_times))
         return graph_list
 
-
 class GraphUtils:
     @staticmethod
     def get_eventstream(graph:nx.DiGraph):

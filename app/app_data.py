@@ -59,13 +59,6 @@ def app_data(config: dict):
             """
             App 3.
             Convert graph to dataset and save using pickle
-                train
-                    datastream
-                    traj_list
-                test
-                    src_list
-                    datastream
-                    traj ...
             """
             if config['mode']=="test":
                 graph_type_list=['ladder','grid','tree','erdos_renyi','barabasi_albert','community','caveman']
@@ -97,7 +90,6 @@ def app_data(config: dict):
                 DataUtils.save_to_pickle(data=all_datastream_list,file_name=f"{config['mode']}_{config['num_nodes']}_datastream_list",dir_type="dataset",mode=config['mode'],num_nodes=config['num_nodes'])
                 DataUtils.save_to_pickle(data=all_trajs_list,file_name=f"{config['mode']}_{config['num_nodes']}_trajs_list",dir_type="dataset",mode=config['mode'],num_nodes=config['num_nodes'])
 
-
 if __name__=="__main__":
     """
     Execute app_train
@@ -105,10 +97,19 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser()
     # app number
     parser.add_argument("--app_num",type=int,default=1)
+    parser.add_argument("--mode",type=str,default="train")
+    parser.add_argument("--num_graphs",type=int,default=5)
+    parser.add_argument("--num_nodes",type=int,default=20)
+    parser.add_argument("--num_times",type=int,default=5)
+
     args=parser.parse_args()
 
     config={
         # app 관련
         'app_num':args.app_num,
+        'mode':args.mode,
+        'num_graphs':args.num_graphs,
+        'num_nodes':args.num_nodes,
+        'num_times':args.num_times
     }
     app_data(config=config)
