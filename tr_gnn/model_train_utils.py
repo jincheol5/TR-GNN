@@ -62,24 +62,20 @@ class ModelTrainUtils:
         return data_loader
 
     @staticmethod
-    def teacher_forcing(pred:torch.Tensor,label:torch.Tensor,tar:torch.Tensor,p:float=0.5):
+    def teacher_forcing(pred:torch.Tensor,label:torch.Tensor,p:float=0.5):
         """
         Input
-            pred: [N,1]
-            label: [N,1]
-            tar: [B,]
+            pred: [B,1]
+            label: [B,1]
             p: float
         Output:
             updated_r_pred
         """
-        batch_size=tar.size(0)
-        mask=(torch.rand(batch_size,device=pred.device)<p) # [B,], boolean tensor
-        for i in range(batch_size):
-            tar_id=tar[i]
-            if mask[i]:
-                pred[tar_id]=label[tar_id]
+        batch_size=pred.size(0)
+        mask=(torch.rand(batch_size,device=pred.device)<p).unsqueeze(-1) # [B,1] boolean mask
+        pred=torch.where(mask,label,pred) # teacher forcing
         return pred
-    
+
     @staticmethod
     def chunk_loader_worker(chunk_paths:str,buffer_queue:queue.Queue):
         """

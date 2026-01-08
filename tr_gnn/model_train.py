@@ -13,7 +13,7 @@ from .metrics import Metrics
 
 class ModelTrainer:
     @staticmethod
-    def train(model,is_memory:bool=False,train_data_loader_list:list=None,val_data_loader_list:list=None,config:dict=None):
+    def train(model,train_data_loader_list:list=None,val_data_loader_list:list=None,config:dict=None):
         device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model.to(device)
         optimizer=torch.optim.Adam(model.parameters(),lr=config['lr']) if config['optimizer']=='adam' else torch.optim.SGD(model.parameters(),lr=config['lr'])
@@ -29,32 +29,23 @@ class ModelTrainer:
         """
         for epoch in tqdm(range(config['epochs']),desc=f"Training..."):
             model.train()
-            epoch_loss_list=[]
+            loss_list=[]
             for train_data_loader in tqdm(train_data_loader_list,desc=f"Training epoch: {epoch}..."):
-                loss_list=[]
-                memory=None
-                for batch in train_data_loader:
-                    # move batch tensors to device so model and loss use same device
-                    batch={k:v.to(device) for k,v in batch.items()}
-                    if is_memory:
-                        logit,memory=model(batch=batch,pre_memory=memory,device=device)
-                    else:
-                        logit=model(batch=batch,device=device)
-                    loss=Metrics.compute_TR_loss(logit=logit,label=batch['label'])
-                    loss_list.append(loss)
+                label_list=[batch['label'] for batch in train_data_loader] # List of [B,1], B는 각 element마다 다를 수 있음
+                label_list=[label.to(device) for label in label_list]
 
-                    # back propagation
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
+                logit_list=model(data_loader=train_data_loader,device=device,mode="train")
+                loss=Metrics.compute_TR_loss(logit_list=logit_list,label_list=label_list)
+                loss_list.append(loss)
 
-                    if is_memory:
-                        memory=memory.detach()
-                epoch_loss_list.append(torch.stack(loss_list).mean().item())
+                # back propagation
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
             """
             wandb log
             """
-            epoch_loss=np.mean(epoch_loss_list)
+            epoch_loss=torch.stack(loss_list).mean().item()
             if config['wandb']:
                 wandb.log({
                     f"loss":epoch_loss,
@@ -63,7 +54,7 @@ class ModelTrainer:
             """
             validate
             """
-            perform=ModelTrainer.test(model=model,is_memory=is_memory,data_loader_list=val_data_loader_list)
+            perform=ModelTrainer.test(model=model,data_loader_list=val_data_loader_list)
             print(f"{epoch+1} epoch TR validation Acc: {perform['acc']} Macro-f1: {perform['macrof1']} PR-AUC: {perform['prauc']} MCC: {perform['mcc']}")
             
             """
@@ -78,7 +69,7 @@ class ModelTrainer:
                     break
 
     @staticmethod
-    def test(model,is_memory:bool=False,data_loader_list=None):
+    def test(model,data_loader_list=None):
         device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model.to(device)
         model.eval()
@@ -86,22 +77,25 @@ class ModelTrainer:
         """
         model test
         """
+        acc_list=[]
         all_logit_list=[]
         all_label_list=[]
         with torch.no_grad():
             for data_loader in tqdm(data_loader_list,desc=f"Evaluating..."):
-                memory=None
-                for batch in data_loader:
-                    # move batch tensors to device so model and metrics use same device
-                    batch={k:v.to(device) for k,v in batch.items()}
-                    if is_memory:
-                        logit,memory=model(batch=batch,pre_memory=memory,device=device)
-                    else:
-                        logit=model(batch=batch,device=device)
-                    all_logit_list.append(logit)
-                    all_label_list.append(batch['label'])
+                label_list=[batch['label'] for batch in data_loader]
+                label_list=[label.to(device) for label in label_list]
+                
+                logit_list=model(data_loader=data_loader,device=device,mode="test")
+
+                acc=Metrics.compute_TR_acc(logit_list=logit_list,label_list=label_list)
+                acc_list.append(acc)
+
+                all_logit_list+=logit_list
+                all_label_list+=label_list
+
+        # compute acc,macrof1,auroc,prauc,mcc
         perform={
-            'acc':Metrics.compute_TR_acc(logit_list=all_logit_list,label_list=all_label_list),
+            'acc':float(np.mean(acc_list)),
             'macrof1':Metrics.compute_TR_macroF1(logit_list=all_logit_list,label_list=all_label_list),
             'prauc':Metrics.compute_TR_PRAUC(logit_list=all_logit_list,label_list=all_label_list),
             'mcc':Metrics.compute_TR_MCC(logit_list=all_logit_list,label_list=all_label_list)

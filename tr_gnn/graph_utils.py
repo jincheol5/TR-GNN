@@ -217,7 +217,7 @@ class GraphUtils:
         if init:
             gamma=torch.zeros((num_nodes,2),dtype=torch.float) # TR,visited_time
             gamma[:,0]=0.0 # TR
-            gamma[:,1]=0.0 # visited time
+            gamma[:,1]=1.1 # visited time
 
             gamma[source_id,0]=1.0
             gamma[source_id,1]=0.0
