@@ -196,3 +196,63 @@ class TR_GNN(nn.Module):
             pre_traj[tar]=pred_logit # [N,1]
             memory=updated_memory[0] # [N,latent_dim]
         return logit_list # list of [B,1], B는 seq 마다 크기 다를 수 있음
+
+
+class TR_GAT(nn.Module):
+    def __init__(self,traj_dim,latent_dim): 
+        super().__init__()
+        self.time_encoder=TimeEncoder(time_dim=latent_dim)
+        self.embedding=GraphAttention(node_dim=traj_dim+latent_dim,latent_dim=latent_dim,is_memory=True)
+        self.linear=nn.Linear(in_features=latent_dim,out_features=1)
+        self.latent_dim=latent_dim
+    
+    def forward(self,data_loader,device=None,mode=None):
+        """
+        Input:
+            data_loader: list of batch
+                batch: dict
+                    init_traj: [N,1]
+                    traj: [B,N,1]
+                    emb_t: [B,N,1]
+                    mem_t: [B,N,1]
+                    src: [B,1]
+                    tar: [B,1]
+                    n_mask: [B,N]
+                    label: [B,1]
+        Output:
+            logit_list: list of [B,1], B는 seq 마다 크기 다를 수 있음
+        """
+        logit_list=[]
+        num_nodes=data_loader[0]['traj'].size(1)
+        pre_traj=data_loader[0]['init_traj'] # [N,1]
+        pre_traj=pre_traj.to(device)
+        memory=torch.zeros((num_nodes,self.latent_dim),device=device) # [N,latent_dim]
+        for batch in data_loader:
+            batch={k:v.to(device) for k,v in batch.items()}
+            batch_size,num_nodes,_=batch['traj'].size()
+            expanded_pre_traj=pre_traj.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,1]
+            raw=torch.zeros((batch_size,num_nodes,self.latent_dim),device=device) # [B,N,latent_dim], node raw feature
+            x=torch.cat([expanded_pre_traj,raw],dim=-1) # [B,N,node_dim], node_dim=1+latent_dim 
+
+            mem_t=batch['mem_t'] # [B,N,1]
+            emb_t=batch['emb_t'] # [B,N,1]
+            src=batch['src'] # [B,1]
+            tar=batch['tar'] # [B,1]
+            n_mask=batch['n_mask'] # [B,N]
+
+            """
+            2. embedding
+            """
+            delta_emb_t_vec=self.time_encoder(emb_t) # [B,N,latent_dim]
+            z=self.embedding(x=x,delta_t_vec=delta_emb_t_vec,neighbor_mask=n_mask,tar_idx=tar,memory=memory) # [B,latent_dim]
+            logit=self.linear(z) # [B,1]
+            logit_list.append(logit)
+
+            pred_logit=torch.sigmoid(logit) # [B,1]
+            tar_label=batch['label'] # [B,1]
+            if mode=="train":
+                pred_logit=ModelTrainUtils.teacher_forcing(pred=pred_logit,label=tar_label)
+            tar=tar.squeeze(1) # [B,]
+            pre_traj[tar]=pred_logit # [N,1]
+            memory[tar]=z # [N,latent_dim]
+        return logit_list # list of [B,1], B는 seq 마다 크기 다를 수 있음
