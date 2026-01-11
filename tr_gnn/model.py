@@ -56,7 +56,7 @@ class TGN(nn.Module):
     def __init__(self,latent_dim,emb:Literal['time','sum','attn']): 
         super().__init__()
         self.time_encoder=TimeEncoder(time_dim=latent_dim)
-        self.memory_updater=MemoryUpdater(latent_dim=latent_dim)
+        self.memory_updater=NE_MemoryUpdater(latent_dim=latent_dim)
         match emb:
             case 'time':
                 self.embedding=TimeProjection(latent_dim=latent_dim)
