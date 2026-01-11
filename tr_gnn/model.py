@@ -134,7 +134,7 @@ class TR_GNN(nn.Module):
     def __init__(self,traj_dim,latent_dim): 
         super().__init__()
         self.time_encoder=TimeEncoder(time_dim=latent_dim)
-        self.memory_updater=NE_MemoryUpdater(traj_dim=traj_dim,latent_dim=latent_dim)
+        self.memory_updater=MemoryUpdater(latent_dim=latent_dim)
         self.embedding=GraphAttention(node_dim=traj_dim+latent_dim,latent_dim=latent_dim,is_memory=True)
         self.linear=nn.Linear(in_features=latent_dim,out_features=1)
         self.latent_dim=latent_dim
@@ -177,7 +177,7 @@ class TR_GNN(nn.Module):
             1. memory update using previous raw messages
             """
             delta_mem_t_vec=self.time_encoder(mem_t) # [B,N,latent_dim]
-            updated_memory=self.memory_updater(traj=expanded_pre_traj[0],memory=memory,source=src,target=tar,delta_t_vec=delta_mem_t_vec) # [N,latent_dim]
+            updated_memory=self.memory_updater(memory=memory,source=src,target=tar,delta_t_vec=delta_mem_t_vec) # [N,latent_dim]
             updated_memory=updated_memory.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,latent_dim]
 
             """
@@ -188,12 +188,15 @@ class TR_GNN(nn.Module):
             logit=self.linear(z) # [B,1]
             logit_list.append(logit)
 
+            """
+            3. set intermediate results and next memory
+            """
+            tar=tar.squeeze(1) # [B,]
             pred_logit=torch.sigmoid(logit) # [B,1]
             tar_label=batch['label'] # [B,1]
             if mode=="train":
                 pred_logit=ModelTrainUtils.teacher_forcing(pred=pred_logit,label=tar_label)
-            tar=tar.squeeze(1) # [B,]
-            pre_traj[tar]=pred_logit # [N,1]
+            pre_traj[tar]=pre_traj[tar]+(1-pre_traj[tar])*pred_logit
             memory=updated_memory[0] # [N,latent_dim]
         return logit_list # list of [B,1], B는 seq 마다 크기 다를 수 있음
 
