@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from typing_extensions import Literal
-from .modules import TimeEncoder,MemoryUpdater,TimeProjection,GraphSum,GraphAttention
+from .modules import TimeEncoder,MemoryUpdater,NE_MemoryUpdater,TimeProjection,GraphSum,GraphAttention
 from .model_train_utils import ModelTrainUtils
 
 class TGAT(nn.Module):
@@ -134,7 +134,7 @@ class TR_GNN(nn.Module):
     def __init__(self,traj_dim,latent_dim): 
         super().__init__()
         self.time_encoder=TimeEncoder(time_dim=latent_dim)
-        self.memory_updater=MemoryUpdater(latent_dim=latent_dim)
+        self.memory_updater=NE_MemoryUpdater(traj_dim=traj_dim,latent_dim=latent_dim)
         self.embedding=GraphAttention(node_dim=traj_dim+latent_dim,latent_dim=latent_dim,is_memory=True)
         self.linear=nn.Linear(in_features=latent_dim,out_features=1)
         self.latent_dim=latent_dim
@@ -177,7 +177,7 @@ class TR_GNN(nn.Module):
             1. memory update using previous raw messages
             """
             delta_mem_t_vec=self.time_encoder(mem_t) # [B,N,latent_dim]
-            updated_memory=self.memory_updater(memory=memory,source=src,target=tar,delta_t_vec=delta_mem_t_vec) # [N,latent_dim]
+            updated_memory=self.memory_updater(traj=expanded_pre_traj[0],memory=memory,source=src,target=tar,delta_t_vec=delta_mem_t_vec) # [N,latent_dim]
             updated_memory=updated_memory.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,latent_dim]
 
             """

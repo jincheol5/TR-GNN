@@ -104,6 +104,81 @@ class MemoryUpdater(nn.Module):
         memory[unique_nodes]=new_memory # [N,latent_dim]
         return memory # [N,latent_dim]
 
+
+class NE_MemoryUpdater(nn.Module):
+    def __init__(self,traj_dim,latent_dim):
+        super().__init__()
+        self.src_mlp=nn.Sequential(
+            nn.Linear(in_features=traj_dim+latent_dim+latent_dim+latent_dim,out_features=latent_dim),
+            nn.ReLU(),
+            nn.Linear(in_features=latent_dim,out_features=latent_dim)
+        )
+        self.tar_mlp=nn.Sequential(
+            nn.Linear(in_features=traj_dim+latent_dim+latent_dim+latent_dim,out_features=latent_dim),
+            nn.ReLU(),
+            nn.Linear(in_features=latent_dim,out_features=latent_dim)
+        )
+        self.gru=nn.GRUCell(input_size=latent_dim,hidden_size=latent_dim)
+    
+    def message_aggregate(self,source:torch.Tensor,target:torch.Tensor,source_msg:torch.Tensor,target_msg:torch.Tensor):
+        """
+        Input:
+            source: [B,1]
+            target: [B,1]
+            source_msg: [B,latent_dim]
+            target_msg: [B,latent_dim]
+        Output:
+            aggregated_msg: [unique_node_size,latent_dim]
+        """
+        src_tar_nodes=torch.cat([source,target],dim=0).squeeze(-1) # [2*B,]
+        src_tar_msg=torch.cat([source_msg,target_msg],dim=0)  # [2*B,latent_dim]
+        unique_nodes,inverse_indices=torch.unique(src_tar_nodes,return_inverse=True) # [unique_node_size,],[2*B]
+        aggregated_msg=scatter_mean(src=src_tar_msg,index=inverse_indices,dim=0)  # [unique_node_size,latent_dim]
+        return unique_nodes,aggregated_msg # [unique_node_size,],[unique_node_size,latent_dim]
+
+    def forward(self,traj,memory,source:torch.Tensor,target:torch.Tensor,delta_t_vec:torch.Tensor):
+        """
+        Input:
+            traj: [N,latent_dim]
+            memory: [N,latent_dim]
+            source: [B,1]
+            target: [B,1]
+            delta_t_vec: [B,N,latent_dim]
+        Output:
+            updated_memory
+        """
+        batch_size=source.size(0)
+
+        source_batch_indices=torch.arange(batch_size,device=memory.device) # [B,]
+        source=source.squeeze(-1) # [B,]
+        source_traj=traj[source]
+        source_memory=memory[source] # [B,latent_dim]
+        source_delta_t_vec=delta_t_vec[source_batch_indices,source,:] # [B,latent_dim]
+        
+        target_batch_indices=torch.arange(batch_size,device=memory.device)
+        target=target.squeeze(-1) # [B,]
+        target_traj=traj[target]
+        target_memory=memory[target] # [B,latent_dim]
+        target_delta_t_vec=delta_t_vec[target_batch_indices,target,:] # [B,latent_dim]
+
+        source_msg_input=torch.cat([source_traj,source_memory,target_memory,source_delta_t_vec],dim=-1) # [B,traj+latent_dim+latent_dim+latent_dim]
+        source_msg=self.src_mlp(source_msg_input) # [B,latent_dim]
+
+        target_msg_input=torch.cat([target_traj,target_memory,source_memory,target_delta_t_vec],dim=-1) # [B,traj+latent_dim+latent_dim+latent_dim]
+        target_msg=self.tar_mlp(target_msg_input) # [B,latent_dim]
+
+        unique_nodes,aggregated_msg=self.message_aggregate(
+            source=source.unsqueeze(-1),
+            target=target.unsqueeze(-1),
+            source_msg=source_msg,
+            target_msg=target_msg
+        ) # [unique_node_size,],[unique_node_size,latent_dim]
+
+        pre_memory=memory[unique_nodes] # [unique_node_size,latent_dim]
+        new_memory=self.gru(aggregated_msg,pre_memory) # [unique_node_size,latent_dim]
+        memory[unique_nodes]=new_memory # [N,latent_dim]
+        return memory # [N,latent_dim]
+
 """
 Embedding Modules
 1. TimeProjection
