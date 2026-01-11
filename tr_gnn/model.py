@@ -243,8 +243,9 @@ class TR_GAT(nn.Module):
             """
             2. embedding
             """
+            expanded_memory=memory.unsqueeze(0).expand(batch_size,-1,-1)
             delta_emb_t_vec=self.time_encoder(emb_t) # [B,N,latent_dim]
-            z=self.embedding(x=x,delta_t_vec=delta_emb_t_vec,neighbor_mask=n_mask,tar_idx=tar,memory=memory) # [B,latent_dim]
+            z=self.embedding(x=x,delta_t_vec=delta_emb_t_vec,neighbor_mask=n_mask,tar_idx=tar,memory=expanded_memory) # [B,latent_dim]
             logit=self.linear(z) # [B,1]
             logit_list.append(logit)
 
