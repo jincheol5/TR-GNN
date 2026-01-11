@@ -308,7 +308,7 @@ class GraphAttention(nn.Module):
         # 이웃 노드 하나도 없는 경우 확인->없을 경우 자기 자신만 true가 되도록 mask 수정
         no_neighbor=~neighbor_mask.any(dim=1) # [B,] bool vec, 이웃 없는 행은 true로
         if no_neighbor.any():
-            neighbor_mask[no_neighbor,tar_idx[no_neighbor,0]]=True
+            neighbor_mask[no_neighbor,tar_idx[no_neighbor]]=True
 
         neighbor_mask=neighbor_mask.unsqueeze(1) # [B,1,N]
         attention_scores=attention_scores.masked_fill(~neighbor_mask,float('-inf')) # [B,1,N]
