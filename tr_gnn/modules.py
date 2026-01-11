@@ -106,15 +106,15 @@ class MemoryUpdater(nn.Module):
 
 
 class NE_MemoryUpdater(nn.Module):
-    def __init__(self,traj_dim,latent_dim):
+    def __init__(self,latent_dim):
         super().__init__()
         self.src_mlp=nn.Sequential(
-            nn.Linear(in_features=traj_dim+latent_dim+latent_dim+latent_dim,out_features=latent_dim),
+            nn.Linear(in_features=1+latent_dim+latent_dim+latent_dim,out_features=latent_dim),
             nn.ReLU(),
             nn.Linear(in_features=latent_dim,out_features=latent_dim)
         )
         self.tar_mlp=nn.Sequential(
-            nn.Linear(in_features=traj_dim+latent_dim+latent_dim+latent_dim,out_features=latent_dim),
+            nn.Linear(in_features=1+latent_dim+latent_dim+latent_dim,out_features=latent_dim),
             nn.ReLU(),
             nn.Linear(in_features=latent_dim,out_features=latent_dim)
         )
@@ -139,7 +139,7 @@ class NE_MemoryUpdater(nn.Module):
     def forward(self,traj,memory,source:torch.Tensor,target:torch.Tensor,delta_t_vec:torch.Tensor):
         """
         Input:
-            traj: [N,latent_dim]
+            traj: [N,1]
             memory: [N,latent_dim]
             source: [B,1]
             target: [B,1]
@@ -161,10 +161,10 @@ class NE_MemoryUpdater(nn.Module):
         target_memory=memory[target] # [B,latent_dim]
         target_delta_t_vec=delta_t_vec[target_batch_indices,target,:] # [B,latent_dim]
 
-        source_msg_input=torch.cat([source_traj,source_memory,target_memory,source_delta_t_vec],dim=-1) # [B,traj+latent_dim+latent_dim+latent_dim]
+        source_msg_input=torch.cat([source_traj,source_memory,target_memory,source_delta_t_vec],dim=-1) # [B,1+latent_dim+latent_dim+latent_dim]
         source_msg=self.src_mlp(source_msg_input) # [B,latent_dim]
 
-        target_msg_input=torch.cat([target_traj,target_memory,source_memory,target_delta_t_vec],dim=-1) # [B,traj+latent_dim+latent_dim+latent_dim]
+        target_msg_input=torch.cat([target_traj,target_memory,source_memory,target_delta_t_vec],dim=-1) # [B,1+latent_dim+latent_dim+latent_dim]
         target_msg=self.tar_mlp(target_msg_input) # [B,latent_dim]
 
         unique_nodes,aggregated_msg=self.message_aggregate(
