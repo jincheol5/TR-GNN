@@ -33,76 +33,76 @@ class TimeEncoder(nn.Module):
         output=torch.cos(self.w(timestamps)) # [B,N,time_dim]
         return output
 
-class MemoryUpdater(nn.Module):
-    def __init__(self,latent_dim):
-        super().__init__()
-        self.src_mlp=nn.Sequential(
-            nn.Linear(in_features=latent_dim+latent_dim+latent_dim,out_features=latent_dim),
-            nn.ReLU(),
-            nn.Linear(in_features=latent_dim,out_features=latent_dim)
-        )
-        self.tar_mlp=nn.Sequential(
-            nn.Linear(in_features=latent_dim+latent_dim+latent_dim,out_features=latent_dim),
-            nn.ReLU(),
-            nn.Linear(in_features=latent_dim,out_features=latent_dim)
-        )
-        self.gru=nn.GRUCell(input_size=latent_dim,hidden_size=latent_dim)
+# class MemoryUpdater(nn.Module):
+#     def __init__(self,latent_dim):
+#         super().__init__()
+#         self.src_mlp=nn.Sequential(
+#             nn.Linear(in_features=latent_dim+latent_dim+latent_dim,out_features=latent_dim),
+#             nn.ReLU(),
+#             nn.Linear(in_features=latent_dim,out_features=latent_dim)
+#         )
+#         self.tar_mlp=nn.Sequential(
+#             nn.Linear(in_features=latent_dim+latent_dim+latent_dim,out_features=latent_dim),
+#             nn.ReLU(),
+#             nn.Linear(in_features=latent_dim,out_features=latent_dim)
+#         )
+#         self.gru=nn.GRUCell(input_size=latent_dim,hidden_size=latent_dim)
     
-    def message_aggregate(self,source:torch.Tensor,target:torch.Tensor,source_msg:torch.Tensor,target_msg:torch.Tensor):
-        """
-        Input:
-            source: [B,1]
-            target: [B,1]
-            source_msg: [B,latent_dim]
-            target_msg: [B,latent_dim]
-        Output:
-            aggregated_msg: [unique_node_size,latent_dim]
-        """
-        src_tar_nodes=torch.cat([source,target],dim=0).squeeze(-1) # [2*B,]
-        src_tar_msg=torch.cat([source_msg,target_msg],dim=0)  # [2*B,latent_dim]
-        unique_nodes,inverse_indices=torch.unique(src_tar_nodes,return_inverse=True) # [unique_node_size,],[2*B]
-        aggregated_msg=scatter_mean(src=src_tar_msg,index=inverse_indices,dim=0)  # [unique_node_size,latent_dim]
-        return unique_nodes,aggregated_msg # [unique_node_size,],[unique_node_size,latent_dim]
+#     def message_aggregate(self,source:torch.Tensor,target:torch.Tensor,source_msg:torch.Tensor,target_msg:torch.Tensor):
+#         """
+#         Input:
+#             source: [B,1]
+#             target: [B,1]
+#             source_msg: [B,latent_dim]
+#             target_msg: [B,latent_dim]
+#         Output:
+#             aggregated_msg: [unique_node_size,latent_dim]
+#         """
+#         src_tar_nodes=torch.cat([source,target],dim=0).squeeze(-1) # [2*B,]
+#         src_tar_msg=torch.cat([source_msg,target_msg],dim=0)  # [2*B,latent_dim]
+#         unique_nodes,inverse_indices=torch.unique(src_tar_nodes,return_inverse=True) # [unique_node_size,],[2*B]
+#         aggregated_msg=scatter_mean(src=src_tar_msg,index=inverse_indices,dim=0)  # [unique_node_size,latent_dim]
+#         return unique_nodes,aggregated_msg # [unique_node_size,],[unique_node_size,latent_dim]
 
-    def forward(self,memory,source:torch.Tensor,target:torch.Tensor,delta_t_vec:torch.Tensor):
-        """
-        Input:
-            memory: [N,latent_dim]
-            source: [B,1]
-            target: [B,1]
-            delta_t_vec: [B,N,latent_dim]
-        Output:
-            updated_memory
-        """
-        batch_size=source.size(0)
+#     def forward(self,memory,source:torch.Tensor,target:torch.Tensor,delta_t_vec:torch.Tensor):
+#         """
+#         Input:
+#             memory: [N,latent_dim]
+#             source: [B,1]
+#             target: [B,1]
+#             delta_t_vec: [B,N,latent_dim]
+#         Output:
+#             updated_memory
+#         """
+#         batch_size=source.size(0)
 
-        source_batch_indices=torch.arange(batch_size,device=memory.device) # [B,]
-        source=source.squeeze(-1) # [B,]
-        source_memory=memory[source] # [B,latent_dim]
-        source_delta_t_vec=delta_t_vec[source_batch_indices,source,:] # [B,latent_dim]
+#         source_batch_indices=torch.arange(batch_size,device=memory.device) # [B,]
+#         source=source.squeeze(-1) # [B,]
+#         source_memory=memory[source] # [B,latent_dim]
+#         source_delta_t_vec=delta_t_vec[source_batch_indices,source,:] # [B,latent_dim]
         
-        target_batch_indices=torch.arange(batch_size,device=memory.device)
-        target=target.squeeze(-1) # [B,]
-        target_memory=memory[target] # [B,latent_dim]
-        target_delta_t_vec=delta_t_vec[target_batch_indices,target,:] # [B,latent_dim]
+#         target_batch_indices=torch.arange(batch_size,device=memory.device)
+#         target=target.squeeze(-1) # [B,]
+#         target_memory=memory[target] # [B,latent_dim]
+#         target_delta_t_vec=delta_t_vec[target_batch_indices,target,:] # [B,latent_dim]
 
-        source_msg_input=torch.cat([source_memory,target_memory,source_delta_t_vec],dim=-1) # [B,latent_dim+latent_dim+latent_dim]
-        source_msg=self.src_mlp(source_msg_input) # [B,latent_dim]
+#         source_msg_input=torch.cat([source_memory,target_memory,source_delta_t_vec],dim=-1) # [B,latent_dim+latent_dim+latent_dim]
+#         source_msg=self.src_mlp(source_msg_input) # [B,latent_dim]
 
-        target_msg_input=torch.cat([target_memory,source_memory,target_delta_t_vec],dim=-1) # [B,latent_dim+latent_dim+latent_dim]
-        target_msg=self.tar_mlp(target_msg_input) # [B,latent_dim]
+#         target_msg_input=torch.cat([target_memory,source_memory,target_delta_t_vec],dim=-1) # [B,latent_dim+latent_dim+latent_dim]
+#         target_msg=self.tar_mlp(target_msg_input) # [B,latent_dim]
 
-        unique_nodes,aggregated_msg=self.message_aggregate(
-            source=source.unsqueeze(-1),
-            target=target.unsqueeze(-1),
-            source_msg=source_msg,
-            target_msg=target_msg
-        ) # [unique_node_size,],[unique_node_size,latent_dim]
+#         unique_nodes,aggregated_msg=self.message_aggregate(
+#             source=source.unsqueeze(-1),
+#             target=target.unsqueeze(-1),
+#             source_msg=source_msg,
+#             target_msg=target_msg
+#         ) # [unique_node_size,],[unique_node_size,latent_dim]
 
-        pre_memory=memory[unique_nodes] # [unique_node_size,latent_dim]
-        new_memory=self.gru(aggregated_msg,pre_memory) # [unique_node_size,latent_dim]
-        memory[unique_nodes]=new_memory # [N,latent_dim]
-        return memory # [N,latent_dim]
+#         pre_memory=memory[unique_nodes] # [unique_node_size,latent_dim]
+#         new_memory=self.gru(aggregated_msg,pre_memory) # [unique_node_size,latent_dim]
+#         memory[unique_nodes]=new_memory # [N,latent_dim]
+#         return memory # [N,latent_dim]
 
 
 class NE_MemoryUpdater(nn.Module):
@@ -208,14 +208,14 @@ class TimeProjection(nn.Module):
 class GraphSum(nn.Module):
     def __init__(self,node_dim,latent_dim):
         super().__init__()
-        self.w_1=nn.Linear(in_features=node_dim+latent_dim+latent_dim,out_features=latent_dim)
-        self.w_2=nn.Linear(in_features=node_dim+latent_dim+latent_dim,out_features=latent_dim)
+        self.w_1=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
+        self.w_2=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
         self.relu=nn.ReLU()
 
     def forward(self,x,delta_t_vec,neighbor_mask,tar_idx,memory):
         """
         Input:
-            x: [B,N,node_dim]
+            x: [B,N,1], trajectory
             delta_t_vec: [B,N,latent_dim]
             neighbor_mask: [B,N]
             tar_idx: [B,1]
@@ -233,7 +233,7 @@ class GraphSum(nn.Module):
             neighbor_mask[no_neighbor,tar_idx[no_neighbor]] = True
 
         # compute node-wise projection: [B,N,latent_dim]
-        w_1_input=torch.cat([x,memory,delta_t_vec], dim=-1)  # [B,N,node_dim+latent_dim+latent_dim]
+        w_1_input=torch.cat([x,memory,delta_t_vec], dim=-1)  # [B,N,1+latent_dim+latent_dim]
         w_1_output=self.w_1(w_1_input)  # [B,N,latent_dim]
 
         # aggregate neighbor messages per batch: [B,latent_dim]
@@ -242,30 +242,30 @@ class GraphSum(nn.Module):
         h_hat=self.relu(w_1_output_sum)  # [B,latent_dim]
 
         # target node features per batch
-        tar_x=x[batch_idx,tar_idx]  # [B,node_dim]
+        tar_x=x[batch_idx,tar_idx]  # [B,1]
         tar_memory=memory[batch_idx,tar_idx]  # [B,latent_dim]
-        w_2_input=torch.cat([tar_x,tar_memory,h_hat], dim=-1)  # [B,node_dim+latent_dim+latent_dim]
+        w_2_input=torch.cat([tar_x,tar_memory,h_hat], dim=-1)  # [B,1+latent_dim+latent_dim]
         z = self.w_2(w_2_input)  # [B,latent_dim]
         return z
 
 class GraphAttention(nn.Module):
-    def __init__(self,node_dim,latent_dim,is_memory:bool=True):
+    def __init__(self,latent_dim,is_memory:bool=True):
         super().__init__()
         if is_memory:
-            self.query_linear=nn.Linear(in_features=node_dim+latent_dim+latent_dim,out_features=latent_dim)
-            self.key_linear=nn.Linear(in_features=node_dim+latent_dim+latent_dim,out_features=latent_dim)
-            self.value_linear=nn.Linear(in_features=node_dim+latent_dim+latent_dim,out_features=latent_dim)
+            self.query_linear=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
+            self.key_linear=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
+            self.value_linear=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
             self.ffn=nn.Sequential(
-                nn.Linear(latent_dim+node_dim+latent_dim+latent_dim,latent_dim),
+                nn.Linear(1+latent_dim+latent_dim+latent_dim,latent_dim),
                 nn.ReLU(),
                 nn.Linear(latent_dim,latent_dim)
             )
         else:
-            self.query_linear=nn.Linear(in_features=node_dim+latent_dim,out_features=latent_dim)
-            self.key_linear=nn.Linear(in_features=node_dim+latent_dim,out_features=latent_dim)
-            self.value_linear=nn.Linear(in_features=node_dim+latent_dim,out_features=latent_dim)
+            self.query_linear=nn.Linear(in_features=1+latent_dim,out_features=latent_dim)
+            self.key_linear=nn.Linear(in_features=1+latent_dim,out_features=latent_dim)
+            self.value_linear=nn.Linear(in_features=1+latent_dim,out_features=latent_dim)
             self.ffn=nn.Sequential(
-                nn.Linear(latent_dim+node_dim+latent_dim,latent_dim),
+                nn.Linear(1+latent_dim+latent_dim,latent_dim),
                 nn.ReLU(),
                 nn.Linear(latent_dim,latent_dim)
             )
@@ -274,7 +274,7 @@ class GraphAttention(nn.Module):
     def forward(self,x,delta_t_vec,neighbor_mask,tar_idx,memory=None):
         """
         Input:
-            x: [B,N,node_dim], src_info||raw_feature of node 
+            x: [B,N,1], trajectory
             delta_t_vec: [B,N,latent_dim]
             neighbor_mask: [B,N,], neighbor node mask
             tar_idx: [B,1], long
@@ -289,12 +289,12 @@ class GraphAttention(nn.Module):
         if self.is_memory:
             tar_x=x[batch_idx,tar_idx] # [B,node_dim]
             tar_memory=memory[batch_idx,tar_idx] # [B,latent_dim]
-            q_input=torch.cat([tar_x,delta_t_vec[batch_idx,tar_idx],tar_memory],dim=-1) # [B,node_dim+latent_dim+latent_dim]
-            kv_input=torch.cat([x,delta_t_vec,memory],dim=-1) # [B,N,node_dim+latent_dim+latent_dim] 
+            q_input=torch.cat([tar_x,delta_t_vec[batch_idx,tar_idx],tar_memory],dim=-1) # [B,1+latent_dim+latent_dim]
+            kv_input=torch.cat([x,delta_t_vec,memory],dim=-1) # [B,N,1+latent_dim+latent_dim] 
         else:
-            tar_x=x[batch_idx,tar_idx] # [B,node_dim]
-            q_input=torch.cat([tar_x,delta_t_vec[batch_idx,tar_idx]],dim=-1) # [B,node_dim+latent_dim]
-            kv_input=torch.cat([x,delta_t_vec],dim=-1) # [B,N,node_dim+latent_dim]
+            tar_x=x[batch_idx,tar_idx] # [B,1]
+            q_input=torch.cat([tar_x,delta_t_vec[batch_idx,tar_idx]],dim=-1) # [B,1+latent_dim]
+            kv_input=torch.cat([x,delta_t_vec],dim=-1) # [B,N,1+latent_dim]
 
         q=self.query_linear(q_input) # [B,latent_dim]
         k=self.key_linear(kv_input) # [B,N,latent_dim]

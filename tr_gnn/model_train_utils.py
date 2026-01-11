@@ -45,7 +45,7 @@ class ModelTrainUtils:
                 batch['mem_t']=torch.zeros_like(current_mem) # [B,N,1] (first batch all zeros)
             else:
                 batch['mem_t']=prev_mem_block # [B,N,1] delayed by one batch
-            prev_mem_block=current_mem.clone()
+            prev_mem_block=current_mem
             batch['src']=datastream['src'][start:end] # [B,1]
             batch['tar']=datastream['tar'][start:end] # [B,1] 
             batch['n_mask']=datastream['n_mask'][start:end] # [B,N]

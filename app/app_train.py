@@ -55,13 +55,13 @@ def app_train(config: dict):
             ### model train
             match config['model']:
                 case 'tgat':
-                    model=TGAT(traj_dim=1,latent_dim=config['latent_dim'])
+                    model=TGAT(latent_dim=config['latent_dim'])
                 case 'tgn':
-                    model=TGN(traj_dim=1,latent_dim=config['latent_dim'],emb=config['emb'])
+                    model=TGN(latent_dim=config['latent_dim'],emb=config['emb'])
                 case 'trgnn':
-                    model=TR_GNN(traj_dim=1,latent_dim=config['latent_dim'])
+                    model=TR_GNN(latent_dim=config['latent_dim'])
                 case 'trgat':
-                    model=TR_GAT(traj_dim=1,latent_dim=config['latent_dim'])
+                    model=TR_GAT(latent_dim=config['latent_dim'])
             ModelTrainer.train(model=model,train_data_loader_list=train_data_loader_list,val_data_loader_list=val_data_loader_list,config=config)
             
             if config['wandb']:

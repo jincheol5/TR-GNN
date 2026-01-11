@@ -53,7 +53,7 @@ class TGAT(nn.Module):
         return logit_list # list of [B,1], B는 seq 마다 크기 다를 수 있음
 
 class TGN(nn.Module):
-    def __init__(self,traj_dim,latent_dim,emb:Literal['time','sum','attn']): 
+    def __init__(self,latent_dim,emb:Literal['time','sum','attn']): 
         super().__init__()
         self.time_encoder=TimeEncoder(time_dim=latent_dim)
         self.memory_updater=MemoryUpdater(latent_dim=latent_dim)
@@ -61,9 +61,9 @@ class TGN(nn.Module):
             case 'time':
                 self.embedding=TimeProjection(latent_dim=latent_dim)
             case 'sum':
-                self.embedding=GraphSum(node_dim=traj_dim+latent_dim,latent_dim=latent_dim)
+                self.embedding=GraphSum(latent_dim=latent_dim)
             case 'attn':
-                self.embedding=GraphAttention(node_dim=traj_dim+latent_dim,latent_dim=latent_dim,is_memory=True)
+                self.embedding=GraphAttention(latent_dim=latent_dim,is_memory=True)
         self.linear=nn.Linear(in_features=latent_dim,out_features=1)
         self.latent_dim=latent_dim
         self.emb=emb
@@ -92,9 +92,6 @@ class TGN(nn.Module):
         for batch in data_loader:
             batch={k:v.to(device) for k,v in batch.items()}
             batch_size,num_nodes,_=batch['traj'].size()
-            expanded_init_traj=init_traj.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,1]
-            raw=torch.zeros((batch_size,num_nodes,self.latent_dim),device=device) # [B,N,latent_dim], node raw feature
-            x=torch.cat([expanded_init_traj,raw],dim=-1) # [B,N,node_dim], node_dim=1+latent_dim 
 
             mem_t=batch['mem_t'] # [B,N,1]
             emb_t=batch['emb_t'] # [B,N,1]
@@ -106,12 +103,13 @@ class TGN(nn.Module):
             1. memory update using previous raw messages
             """
             delta_mem_t_vec=self.time_encoder(mem_t) # [B,N,latent_dim]
-            updated_memory=self.memory_updater(memory=memory,source=src,target=tar,delta_t_vec=delta_mem_t_vec) # [N,latent_dim]
+            updated_memory=self.memory_updater(traj=init_traj,memory=memory,source=src,target=tar,delta_t_vec=delta_mem_t_vec) # [N,latent_dim]
             updated_memory=updated_memory.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,latent_dim]
 
             """
             2. embedding
             """
+            expanded_init_traj=init_traj.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,1]
             delta_emb_t_vec=self.time_encoder(emb_t) # [B,N,latent_dim]
             match self.emb:
                 case 'time':
@@ -122,9 +120,9 @@ class TGN(nn.Module):
                     delta_t_target=emb_t[batch_idx,tar_idx_s] # [B,1]
                     z=self.embedding(memory=updated_memory[0],delta_t=delta_t_target,tar_idx=tar) # [B,latent_dim]
                 case 'sum':
-                    z=self.embedding(x=x,delta_t_vec=delta_emb_t_vec,neighbor_mask=n_mask,tar_idx=tar,memory=updated_memory) # [B,latent_dim]
+                    z=self.embedding(x=expanded_init_traj,delta_t_vec=delta_emb_t_vec,neighbor_mask=n_mask,tar_idx=tar,memory=updated_memory) # [B,latent_dim]
                 case 'attn':
-                    z=self.embedding(x=x,delta_t_vec=delta_emb_t_vec,neighbor_mask=n_mask,tar_idx=tar,memory=updated_memory) # [B,latent_dim]
+                    z=self.embedding(x=expanded_init_traj,delta_t_vec=delta_emb_t_vec,neighbor_mask=n_mask,tar_idx=tar,memory=updated_memory) # [B,latent_dim]
             logit=self.linear(z) # [B,1]
             logit_list.append(logit)
             memory=updated_memory[0] # [N,latent_dim]
