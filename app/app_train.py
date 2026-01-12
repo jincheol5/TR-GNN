@@ -116,18 +116,18 @@ def app_train(config: dict):
             match config['model']:
                 case 'tgat':
                     model_name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
-                    model=TGAT(traj_dim=1,latent_dim=config['latent_dim'])
+                    model=TGAT(latent_dim=config['latent_dim'])
                     model=DataUtils.load_model_parameter(model=model,model_name=model_name)
                 case 'tgn':
                     model_name=f"{config['model']}_{config['emb']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
-                    model=TGN(traj_dim=1,latent_dim=config['latent_dim'],emb=config['emb'])
+                    model=TGN(latent_dim=config['latent_dim'],emb=config['emb'])
                     model=DataUtils.load_model_parameter(model=model,model_name=model_name)
                 case 'trgnn':
                     model_name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
-                    model=TR_GNN(traj_dim=1,latent_dim=config['latent_dim'])
+                    model=TR_GNN(latent_dim=config['latent_dim'])
                 case 'trgat':
                     model_name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
-                    model=TR_GAT(traj_dim=1,latent_dim=config['latent_dim'])
+                    model=TR_GAT(latent_dim=config['latent_dim'])
             perform=ModelTrainer.test(model=model,data_loader_list=test_data_loader_list)
             print(f"Evaluate {model_name} TR Acc: {perform['acc']} Macro-f1: {perform['macrof1']} PR-AUC: {perform['prauc']} MCC: {perform['mcc']}")
 
