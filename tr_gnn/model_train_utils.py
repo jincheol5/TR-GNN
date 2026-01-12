@@ -20,6 +20,7 @@ class ModelTrainUtils:
         Output:
             data_loader: batch list
                 batch: dict
+                    init_traj: [N,1]
                     traj: [B,N,1]
                     emb_t: [B,N,1]
                     mem_t: [B,N,1]
@@ -28,14 +29,14 @@ class ModelTrainUtils:
                     n_mask: [B,N]
                     label: [B,1]
         """
-        E,num_nodes=datastream['n_mask'].size()
+        seq_len,num_nodes=datastream['n_mask'].size()
         init_traj=torch.zeros((num_nodes,1),dtype=torch.float)
         init_traj[source_id,0]=1.0
 
         data_loader=[]
         prev_mem_block=None  # store mem_t from previous batch to delay mem by one batch
-        for start in range(0,E,batch_size):
-            end=min(start+batch_size,E)
+        for start in range(0,seq_len,batch_size):
+            end=min(start+batch_size,seq_len)
             batch={}
             batch['init_traj']=init_traj # [N,1]
             batch['traj']=traj[start:end] # [B,N,1]
@@ -52,7 +53,7 @@ class ModelTrainUtils:
 
             # label: trajectory value for the target node of each event
             # batch['traj']: [B,N,1], batch['tar']: [B,1]
-            tar_idx=batch['tar'].squeeze(-1).long()  # [B]
+            tar_idx=batch['tar'].squeeze(-1)  # [B]
             batch_traj=batch['traj'] # [B,N,1]
             # select per-row the value at the target node -> result [B,1]
             labels=batch_traj[torch.arange(batch_traj.size(0)),tar_idx] # [B,1]
@@ -69,7 +70,7 @@ class ModelTrainUtils:
             label: [B,1]
             p: float
         Output:
-            updated_r_pred
+            updated_TR_pred: [B,1]
         """
         batch_size=pred.size(0)
         mask=(torch.rand(batch_size,device=pred.device)<p).unsqueeze(-1) # [B,1] boolean mask

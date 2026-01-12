@@ -169,7 +169,7 @@ class GraphUtils:
         # initial setup for n_mask
         num_edge_events=len(eventstream)
         neighbor_mask=torch.zeros((num_edge_events,num_nodes),dtype=torch.bool) # [E,N], 각 edge_event에 대한 tar의 neighbor mask
-        neighbor_history=[torch.zeros(num_nodes,dtype=torch.bool) for _ in range(num_nodes)] # List of [N,]
+        neighbor_history=torch.zeros((num_nodes,num_nodes),dtype=torch.bool) # [N,N]
 
         src_list=[]
         tar_list=[]
@@ -190,7 +190,7 @@ class GraphUtils:
             mem_time_table[src]=ts
             mem_time_table[tar]=ts
 
-            neighbor_history[tar][src]=True
+            neighbor_history[tar,src]=True
             neighbor_mask[idx]=neighbor_history[tar] # 참조가 아닌 복사(tensor index 대입)
             n_mask_list.append(neighbor_mask[idx])
 
@@ -247,7 +247,7 @@ class GraphUtils:
                 edge_event=edge_event,
                 gamma=gamma
             )
-            TR_list.append(gamma[:,:1])
+            TR_list.append(gamma[:,[0]])
         TR_trajectory=torch.stack(TR_list,dim=0) # [E,N,1]
         return TR_trajectory
 

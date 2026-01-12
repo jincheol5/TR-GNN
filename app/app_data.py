@@ -19,7 +19,6 @@ def app_data(config: dict):
             num_nodes: 20, 50, 100, 500, 1000
     """
     match config['app_num']:
-        
         case 1:
             """
             App 1. 

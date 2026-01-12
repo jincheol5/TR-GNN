@@ -181,6 +181,15 @@ class GraphAttention(nn.Module):
     def __init__(self,latent_dim,is_memory:bool=True):
         super().__init__()
         if is_memory:
+            self.query_linear=nn.Linear(in_features=1+latent_dim+latent_dim+latent_dim,out_features=latent_dim)
+            self.key_linear=nn.Linear(in_features=1+latent_dim+latent_dim+latent_dim,out_features=latent_dim)
+            self.value_linear=nn.Linear(in_features=1+latent_dim+latent_dim+latent_dim,out_features=latent_dim)
+            self.ffn=nn.Sequential(
+                nn.Linear(1+latent_dim+latent_dim+latent_dim+latent_dim,latent_dim),
+                nn.ReLU(),
+                nn.Linear(latent_dim,latent_dim)
+            )
+        else:
             self.query_linear=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
             self.key_linear=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
             self.value_linear=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
@@ -189,21 +198,13 @@ class GraphAttention(nn.Module):
                 nn.ReLU(),
                 nn.Linear(latent_dim,latent_dim)
             )
-        else:
-            self.query_linear=nn.Linear(in_features=1+latent_dim,out_features=latent_dim)
-            self.key_linear=nn.Linear(in_features=1+latent_dim,out_features=latent_dim)
-            self.value_linear=nn.Linear(in_features=1+latent_dim,out_features=latent_dim)
-            self.ffn=nn.Sequential(
-                nn.Linear(1+latent_dim+latent_dim,latent_dim),
-                nn.ReLU(),
-                nn.Linear(latent_dim,latent_dim)
-            )
         self.is_memory=is_memory
 
-    def forward(self,traj,delta_t_vec,neighbor_mask,tar_idx,memory=None):
+    def forward(self,traj,x,delta_t_vec,neighbor_mask,tar_idx,memory=None):
         """
         Input:
             traj: [N,1], trajectory
+            x: [N,latent_dim], raw node feature
             delta_t_vec: [B,N,latent_dim]
             neighbor_mask: [B,N,], neighbor node mask
             tar_idx: [B,1], long
@@ -214,18 +215,22 @@ class GraphAttention(nn.Module):
         batch_size=delta_t_vec.size(0)
         batch_idx=torch.arange(batch_size,device=delta_t_vec.device) # [B,]
         expanded_traj=traj.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,1]
-        expanded_memory=memory.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,latent_dim]
+        expanded_x=x.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,latent_dim]
+        if self.is_memory:
+            expanded_memory=memory.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,latent_dim]
         tar_idx=tar_idx.squeeze(-1) # [B,]
 
         if self.is_memory:
             tar_traj=traj[tar_idx] # [B,1]
+            tar_x=x[tar_idx] # [B,latent_dim]
             tar_memory=memory[tar_idx] # [B,latent_dim]
-            q_input=torch.cat([tar_traj,delta_t_vec[batch_idx,tar_idx],tar_memory],dim=-1) # [B,1+latent_dim+latent_dim]
-            kv_input=torch.cat([expanded_traj,delta_t_vec,expanded_memory],dim=-1) # [B,N,1+latent_dim+latent_dim] 
+            q_input=torch.cat([tar_traj,tar_x,delta_t_vec[batch_idx,tar_idx],tar_memory],dim=-1) # [B,1+latent_dim+latent_dim+latent_dim]
+            kv_input=torch.cat([expanded_traj,expanded_x,delta_t_vec,expanded_memory],dim=-1) # [B,N,1+latent_dim+latent_dim+latent_dim] 
         else:
             tar_traj=traj[tar_idx] # [B,1]
-            q_input=torch.cat([tar_traj,delta_t_vec[batch_idx,tar_idx]],dim=-1) # [B,1+latent_dim]
-            kv_input=torch.cat([expanded_traj,delta_t_vec],dim=-1) # [B,N,1+latent_dim]
+            tar_x=x[tar_idx] # [B,latent_dim]
+            q_input=torch.cat([tar_traj,tar_x,delta_t_vec[batch_idx,tar_idx]],dim=-1) # [B,1+latent_dim+latent_dim]
+            kv_input=torch.cat([expanded_traj,expanded_x,delta_t_vec],dim=-1) # [B,N,1+latent_dim+latent_dim]
 
         q=self.query_linear(q_input) # [B,latent_dim]
         k=self.key_linear(kv_input) # [B,N,latent_dim]
@@ -249,6 +254,6 @@ class GraphAttention(nn.Module):
         neighbor_weight_sum=torch.matmul(attention_weight,v) # [B,1,latent_dim]
         neighbor_weight_sum=neighbor_weight_sum.squeeze(1) # [B,latent_dim]
 
-        z=torch.cat([neighbor_weight_sum,q_input],dim=-1) # [B,1+latent_dim+latent_dim]
+        z=torch.cat([neighbor_weight_sum,q_input],dim=-1) # [B,1+latent_dim+latent_dim+latent_dim+latent_dim] or [B,1+latent_dim+latent_dim+latent_dim] 
         z=self.ffn(z) # [B,latent_dim]
         return z

@@ -50,7 +50,8 @@ class ModelTrainer:
                 wandb.log({
                     f"loss":epoch_loss,
                 },step=epoch)
-            
+            print(f"epoch loss: {epoch_loss}")
+
             """
             validate
             """
