@@ -122,13 +122,17 @@ class TimeProjection(nn.Module):
         """
         Input:
             memory: [N,latent_dim] 
-            delta_t: [B,1]
+            delta_t: [B,N,1]
             tar_idx: [B,1]
         Output:
             z: [B,latent_dim]
         """
-        tar_memory=memory[tar_idx.squeeze(-1)] # [B,latent_dim]
-        delta_t_vec=self.w(delta_t) # [B,latent_dim]
+        batch_size=delta_t.size(0)
+        batch_idx=torch.arange(batch_size,device=delta_t.device)
+        tar_idx=tar_idx.squeeze(-1)
+        batch_delta_t=delta_t[batch_idx,tar_idx] # [B,1]
+        tar_memory=memory[tar_idx] # [B,latent_dim]
+        delta_t_vec=self.w(batch_delta_t) # [B,latent_dim]
         delta_t_vec=delta_t_vec+1 # [B,latent_dim]
         z=torch.mul(delta_t_vec,tar_memory) # [B,latent_dim]
         return z
@@ -136,24 +140,27 @@ class TimeProjection(nn.Module):
 class GraphSum(nn.Module):
     def __init__(self,latent_dim):
         super().__init__()
-        self.w_1=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
-        self.w_2=nn.Linear(in_features=1+latent_dim+latent_dim,out_features=latent_dim)
+        self.w_1=nn.Linear(in_features=1+latent_dim+latent_dim+latent_dim,out_features=latent_dim)
+        self.w_2=nn.Linear(in_features=1+latent_dim+latent_dim+latent_dim,out_features=latent_dim)
         self.relu=nn.ReLU()
 
-    def forward(self,traj,delta_t_vec,neighbor_mask,tar_idx,memory):
+    def forward(self,traj,x,delta_t_vec,neighbor_mask,tar_idx,memory):
         """
         Input:
             traj: [N,1]
+            x: [N,latent_dim], raw node feature
             delta_t_vec: [B,N,latent_dim]
             neighbor_mask: [B,N]
             tar_idx: [B,1]
-            memory: [B,N,latent_dim]
+            memory: [N,latent_dim]
         Output:
             z: [B,latent_dim]
         """
         batch_size=delta_t_vec.size(0)
         batch_idx=torch.arange(batch_size,device=delta_t_vec.device)
         expanded_traj=traj.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,1]
+        expanded_x=x.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,1]
+        expanded_memory=memory.unsqueeze(0).expand(batch_size,-1,-1) # [B,N,1]
         tar_idx=tar_idx.squeeze(-1)  # [B,]
 
         # 이웃 노드 하나도 없는 경우 확인->없을 경우 자기 자신만 true가 되도록 mask 수정
@@ -162,7 +169,7 @@ class GraphSum(nn.Module):
             neighbor_mask[no_neighbor,tar_idx[no_neighbor]]=True
 
         # compute node-wise projection: [B,N,latent_dim]
-        w_1_input=torch.cat([expanded_traj,memory,delta_t_vec],dim=-1)  # [B,N,1+latent_dim+latent_dim]
+        w_1_input=torch.cat([expanded_traj,expanded_x,expanded_memory,delta_t_vec],dim=-1)  # [B,N,1+latent_dim+latent_dim+latent_dim]
         w_1_output=self.w_1(w_1_input)  # [B,N,latent_dim]
 
         # aggregate neighbor messages per batch: [B,latent_dim]
@@ -171,9 +178,10 @@ class GraphSum(nn.Module):
         h_hat=self.relu(w_1_output_sum)  # [B,latent_dim]
 
         # target node features per batch
-        tar_traj=expanded_traj[batch_idx,tar_idx]  # [B,1]
-        tar_memory=memory[batch_idx,tar_idx]  # [B,latent_dim]
-        w_2_input=torch.cat([tar_traj,tar_memory,h_hat], dim=-1)  # [B,1+latent_dim+latent_dim]
+        tar_traj=traj[tar_idx]  # [B,1]
+        tar_x=x[tar_idx] # [B,1]
+        tar_memory=memory[tar_idx]  # [B,latent_dim]
+        w_2_input=torch.cat([tar_traj,tar_x,tar_memory,h_hat], dim=-1)  # [B,1+latent_dim+latent_dim+latent_dim]
         z=self.w_2(w_2_input)  # [B,latent_dim]
         return z
 
