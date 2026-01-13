@@ -14,7 +14,15 @@ def app_evaluate(config:dict):
             App 1.
             evaluate models
             """
+            ### set wandb
             wandb.init(project="TR_GNN",name=f"test_{config['num_nodes']}_result")
+
+            ### set parameters
+            model_list=['tgat','tgn','trgnn']
+            seed_list=[1,2,3]
+            lr_list=[0.0001,0.0005]
+            batch_size=16
+            latent_dim=32
 
             ### data load
             test_data_loader_list=[]
@@ -46,13 +54,7 @@ def app_evaluate(config:dict):
                         test_data_loader=ModelTrainUtils.get_data_loader(datastream=datastream,traj=traj,source_id=src,batch_size=batch_size)
                         test_data_loader_list.append(test_data_loader)
 
-            ### set parameters and evaluate
-            model_list=['tgat','tgn','trgnn']
-            seed_list=[1,2,3]
-            lr_list=[0.0001,0.0005]
-            batch_size=16
-            latent_dim=32
-
+            ### evaluate
             for seed in seed_list:
                 """
                 seed setting
