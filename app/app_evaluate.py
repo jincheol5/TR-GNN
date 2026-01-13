@@ -43,7 +43,7 @@ def app_evaluate(config:dict):
                             num_nodes=config['num_nodes'],
                             is_print=False
                         )
-                        test_data_loader=ModelTrainUtils.get_data_loader(datastream=datastream,traj=traj,source_id=src,batch_size=config['batch_size'])
+                        test_data_loader=ModelTrainUtils.get_data_loader(datastream=datastream,traj=traj,source_id=src,batch_size=batch_size)
                         test_data_loader_list.append(test_data_loader)
 
             ### set parameters and evaluate
