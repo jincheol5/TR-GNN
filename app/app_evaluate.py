@@ -81,17 +81,18 @@ def app_evaluate(config:dict):
                             match model:
                                 case 'tgat':
                                     model_name=f"{model}_{seed}_{lr}_{batch_size}"
-                                    model=TGAT(latent_dim=latent_dim)
-                                    model=DataUtils.load_model_parameter(model=model,model_name=model_name)
+                                    trained_model=TGAT(latent_dim=latent_dim)
+                                    trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
                                 case 'tgn':
                                     model_name=f"{model}_{emb}_{seed}_{lr}_{batch_size}"
-                                    model=TGN(latent_dim=latent_dim,emb=emb)
-                                    model=DataUtils.load_model_parameter(model=model,model_name=model_name)
+                                    trained_model=TGN(latent_dim=latent_dim,emb=emb)
+                                    trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
                                 case 'trgnn':
                                     model_name=f"{model}_{seed}_{lr}_{batch_size}"
-                                    model=TR_GNN(latent_dim=latent_dim)
+                                    trained_model=TR_GNN(latent_dim=latent_dim)
+                                    trained_model=DataUtils.load_model_parameter(model=trained_model,model_name=model_name)
 
-                            perform=ModelTrainer.test(model=model,data_loader_list=test_data_loader_list)
+                            perform=ModelTrainer.test(model=trained_model,data_loader_list=test_data_loader_list)
 
                             wandb.log({
                                 f"acc":perform['acc'],
