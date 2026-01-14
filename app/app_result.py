@@ -4,11 +4,11 @@ import pandas as pd
 
 def app_result(config:dict):
     api=wandb.Api()
-    run_20=api.run(f"jcoh-research/TR_GNN/fib7au6i")
-    run_50=api.run(f"jcoh-research/TR_GNN/77rg5w53")
-    run_100=api.run(f"jcoh-research/TR_GNN/ywut7vhr")
-    run_500=api.run(f"jcoh-research/TR_GNN/w3tkl7bk")
-    run_1000=api.run(f"jcoh-research/TR_GNN/sr2u4ou9")
+    run_20=api.run(f"jcoh-research/TR_GNN/4hdbfzgc")
+    run_50=api.run(f"jcoh-research/TR_GNN/1mih6qfn")
+    run_100=api.run(f"jcoh-research/TR_GNN/6l17wul4")
+    run_500=api.run(f"jcoh-research/TR_GNN/wdpkopep")
+    run_1000=api.run(f"jcoh-research/TR_GNN/l16cgznv")
 
     # run_batch_20=api.run(f"jcoh-research/TR_GNN/")
     # run_batch_50=api.run(f"jcoh-research/TR_GNN/")
@@ -67,8 +67,8 @@ def app_result(config:dict):
             ]].std().round(4)
 
             print(f"Evaluate Result:")
-            # print(tgn_metric_mean)
-            # print(tgn_metric_std)
+            print(tgn_metric_mean)
+            print(tgn_metric_std)
             print()
             print(others_metric_mean)
             print(others_metric_std)
