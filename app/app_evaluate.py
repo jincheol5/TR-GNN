@@ -121,36 +121,6 @@ def app_evaluate(config:dict):
             batch_size_list=[4,8,16,32,64]
             latent_dim=32
 
-            ### data load
-            test_data_loader_list=[]
-            graph_type_list=['ladder','grid','tree','erdos_renyi','barabasi_albert','community','caveman']
-            for graph_type in tqdm(graph_type_list,desc=f"Load datasets..."):
-                for graph_id in range(5):
-                    datastream=DataUtils.load_from_pickle(
-                        file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_datastream",
-                        dir_type=f"dataset",
-                        mode="test",
-                        num_nodes=config['num_nodes'],
-                        is_print=False
-                    )
-                    src_list=DataUtils.load_from_pickle(
-                        file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_src_list",
-                        dir_type=f"dataset",
-                        mode="test",
-                        num_nodes=config['num_nodes'],
-                        is_print=False
-                    )
-                    for src in src_list:
-                        traj=DataUtils.load_from_pickle(
-                            file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_traj_{src}",
-                            dir_type=f"dataset",
-                            mode="test",
-                            num_nodes=config['num_nodes'],
-                            is_print=False
-                        )
-                        test_data_loader=ModelTrainUtils.get_data_loader(datastream=datastream,traj=traj,source_id=src,batch_size=batch_size)
-                        test_data_loader_list.append(test_data_loader)
-
             ### evaluate
             """
             seed setting
@@ -164,8 +134,39 @@ def app_evaluate(config:dict):
             torch.backends.cudnn.deterministic=True 
             torch.backends.cudnn.benchmark=False
             
-            for model in model_list:
-                for batch_size in batch_size_list:
+            
+            for batch_size in batch_size_list:
+                ### data load
+                test_data_loader_list=[]
+                graph_type_list=['ladder','grid','tree','erdos_renyi','barabasi_albert','community','caveman']
+                for graph_type in tqdm(graph_type_list,desc=f"Load datasets..."):
+                    for graph_id in range(5):
+                        datastream=DataUtils.load_from_pickle(
+                            file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_datastream",
+                            dir_type=f"dataset",
+                            mode="test",
+                            num_nodes=config['num_nodes'],
+                            is_print=False
+                        )
+                        src_list=DataUtils.load_from_pickle(
+                            file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_src_list",
+                            dir_type=f"dataset",
+                            mode="test",
+                            num_nodes=config['num_nodes'],
+                            is_print=False
+                        )
+                        for src in src_list:
+                            traj=DataUtils.load_from_pickle(
+                                file_name=f"test_{config['num_nodes']}_{graph_type}_{graph_id}_traj_{src}",
+                                dir_type=f"dataset",
+                                mode="test",
+                                num_nodes=config['num_nodes'],
+                                is_print=False
+                            )
+                            test_data_loader=ModelTrainUtils.get_data_loader(datastream=datastream,traj=traj,source_id=src,batch_size=batch_size)
+                            test_data_loader_list.append(test_data_loader)
+
+                for model in model_list:
                     """
                     model setting and evaluating
                     """
@@ -192,6 +193,7 @@ def app_evaluate(config:dict):
                         f"lr":lr,
                         f"batch_size":batch_size
                     })
+                del test_data_loader_list
 
 if __name__=="__main__":
     """
