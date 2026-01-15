@@ -10,11 +10,11 @@ def app_result(config:dict):
     run_500=api.run(f"jcoh-research/TR_GNN/wdpkopep")
     run_1000=api.run(f"jcoh-research/TR_GNN/l16cgznv")
 
-    run_batch_20=api.run(f"jcoh-research/TR_GNN/")
-    run_batch_50=api.run(f"jcoh-research/TR_GNN/")
-    run_batch_100=api.run(f"jcoh-research/TR_GNN/")
-    run_batch_500=api.run(f"jcoh-research/TR_GNN/")
-    run_batch_1000=api.run(f"jcoh-research/TR_GNN/")
+    run_batch_20=api.run(f"jcoh-research/TR_GNN/o4t9yv0b")
+    run_batch_50=api.run(f"jcoh-research/TR_GNN/pamm4s8r")
+    run_batch_100=api.run(f"jcoh-research/TR_GNN/ybfijskm")
+    run_batch_500=api.run(f"jcoh-research/TR_GNN/lkovaool")
+    run_batch_1000=api.run(f"jcoh-research/TR_GNN/jd9jo50q")
 
     match config['app_num']:
         case 1:
