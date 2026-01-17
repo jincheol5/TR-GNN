@@ -15,7 +15,7 @@ def app_evaluate(config:dict):
             Evaluate: size-OOD
             """
             ### set wandb
-            wandb.init(project="TR_GNN",name=f"test_{config['num_nodes']}_result")
+            wandb.init(project="TR-GNN",name=f"test_{config['num_nodes']}_result")
 
             ### set parameters
             model_list=['tgat','tgn','trgnn']
@@ -111,7 +111,7 @@ def app_evaluate(config:dict):
             Evaluate: batch-size sensitivity
             """
             ### set wandb
-            wandb.init(project="TR_GNN",name=f"test_{config['num_nodes']}_batch_result")
+            wandb.init(project="TR-GNN",name=f"test_{config['num_nodes']}_batch_result")
 
             ### set parameters
             model_list=['tgn','trgnn']

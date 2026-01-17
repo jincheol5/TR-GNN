@@ -62,7 +62,8 @@ class ModelTrainer:
             Early stopping
             """
             if config['early_stop']:
-                val_acc=perform['acc']
+                # val_acc=perform['acc']
+                val_acc=perform['prauc']
                 pre_model=early_stop(val_acc=val_acc,model=model)
                 if early_stop.early_stop:
                     model=pre_model

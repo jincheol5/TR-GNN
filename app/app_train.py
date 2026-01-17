@@ -29,9 +29,9 @@ def app_train(config: dict):
             ### wandb
             if config['wandb']:
                 if config['model']=='tgn':
-                    wandb.init(project="TR_GNN",name=f"{config['model']}_{config['emb']}_{config['seed']}_{config['lr']}_{config['batch_size']}")
+                    wandb.init(project="TR-GNN",name=f"{config['model']}_{config['emb']}_{config['seed']}_{config['lr']}_{config['batch_size']}")
                 else: # tgat, trgnn
-                    wandb.init(project="TR_GNN",name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}")
+                    wandb.init(project="TR-GNN",name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}")
 
             ### data load
             train_20_datastream_list=DataUtils.load_from_pickle(file_name=f"train_20_datastream_list",dir_type=f"dataset",mode=f"train",num_nodes=20)
