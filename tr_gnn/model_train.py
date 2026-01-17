@@ -1,14 +1,8 @@
-import os
-import random
-import threading
-import queue
 import wandb
 import torch
 import numpy as np
-from typing_extensions import Literal
 from tqdm import tqdm
-from .data_utils import DataUtils
-from .model_train_utils import ModelTrainUtils,EarlyStopping
+from .model_train_utils import EarlyStopping
 from .metrics import Metrics
 
 class ModelTrainer:

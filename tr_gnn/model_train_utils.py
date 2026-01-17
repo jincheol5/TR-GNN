@@ -32,21 +32,14 @@ class ModelTrainUtils:
         seq_len,num_nodes=datastream['n_mask'].size()
         init_traj=torch.zeros((num_nodes,1),dtype=torch.float)
         init_traj[source_id,0]=1.0
-
         data_loader=[]
-        prev_mem_block=None  # store mem_t from previous batch to delay mem by one batch
         for start in range(0,seq_len,batch_size):
             end=min(start+batch_size,seq_len)
             batch={}
             batch['init_traj']=init_traj # [N,1]
             batch['traj']=traj[start:end] # [B,N,1]
             batch['emb_t']=datastream['emb_t'][start:end] # [B,N,1]
-            current_mem=datastream['mem_t'][start:end] # [B,N,1]
-            if prev_mem_block is None:
-                batch['mem_t']=torch.zeros_like(current_mem) # [B,N,1] (first batch all zeros)
-            else:
-                batch['mem_t']=prev_mem_block # [B,N,1] delayed by one batch
-            prev_mem_block=current_mem
+            batch['mem_t']=datastream['mem_t'][start:end] # [B,N,1]
             batch['src']=datastream['src'][start:end] # [B,1]
             batch['tar']=datastream['tar'][start:end] # [B,1] 
             batch['n_mask']=datastream['n_mask'][start:end] # [B,N]
@@ -76,18 +69,6 @@ class ModelTrainUtils:
         mask=(torch.rand(batch_size,device=pred.device)<p).unsqueeze(-1) # [B,1] boolean mask
         pred=torch.where(mask,label,pred) # teacher forcing
         return pred
-
-    @staticmethod
-    def chunk_loader_worker(chunk_paths:str,buffer_queue:queue.Queue):
-        """
-        chunk_paths: chunk 파일 리스트
-        """
-        print(f"Run chunk_loader_worker!")
-        for path in chunk_paths:
-            with open(path,"rb") as f:
-                data=pickle.load(f)
-            buffer_queue.put(data) # 버퍼가 꽉 차면 자동 대기
-        buffer_queue.put(None) # 종료 신호
 
 class EarlyStopping:
     def __init__(self,patience=1):
