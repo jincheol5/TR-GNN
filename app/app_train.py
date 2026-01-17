@@ -5,7 +5,7 @@ import argparse
 import wandb
 import torch
 from tqdm import tqdm
-from tr_gnn import DataUtils,ModelTrainer,ModelTrainUtils,TGAT,TGN,TR_GNN,TR_GAT
+from tr_gnn import DataUtils,ModelTrainer,ModelTrainUtils,TGAT,TGN,TR_GNN
 
 def app_train(config: dict):
     """
@@ -60,8 +60,6 @@ def app_train(config: dict):
                     model=TGN(latent_dim=config['latent_dim'],emb=config['emb'])
                 case 'trgnn':
                     model=TR_GNN(latent_dim=config['latent_dim'])
-                case 'trgat':
-                    model=TR_GAT(latent_dim=config['latent_dim'])
             ModelTrainer.train(model=model,train_data_loader_list=train_data_loader_list,val_data_loader_list=val_data_loader_list,config=config)
             
             if config['wandb']:
@@ -70,7 +68,7 @@ def app_train(config: dict):
             ### save model
             if config['save_model']:
                 match config['model']:
-                    case 'tgat'|'trgnn'|'trgat':
+                    case 'tgat'|'trgnn':
                         model_name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
                         DataUtils.save_model_parameter(model=model,model_name=model_name)
                     case 'tgn':
@@ -125,9 +123,6 @@ def app_train(config: dict):
                 case 'trgnn':
                     model_name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
                     model=TR_GNN(latent_dim=config['latent_dim'])
-                case 'trgat':
-                    model_name=f"{config['model']}_{config['seed']}_{config['lr']}_{config['batch_size']}"
-                    model=TR_GAT(latent_dim=config['latent_dim'])
             perform=ModelTrainer.test(model=model,data_loader_list=test_data_loader_list)
             print(f"Evaluate {model_name} TR Acc: {perform['acc']} Macro-f1: {perform['macrof1']} PR-AUC: {perform['prauc']} MCC: {perform['mcc']}")
 
@@ -140,7 +135,7 @@ if __name__=="__main__":
     parser.add_argument("--app_num",type=int,default=1)
     
     # setting
-    parser.add_argument("--model",type=str,default='tgat') # tgat, tgn, trgnn, trgat
+    parser.add_argument("--model",type=str,default='tgat') # tgat, tgn, trgnn
     parser.add_argument("--emb",type=str,default='attn') # time, sum, attn
 
     # train
