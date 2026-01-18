@@ -4,17 +4,17 @@ import pandas as pd
 
 def app_result(config:dict):
     api=wandb.Api()
-    run_20=api.run(f"jcoh-research/TR-GNN/4hdbfzgc")
-    run_50=api.run(f"jcoh-research/TR-GNN/1mih6qfn")
-    run_100=api.run(f"jcoh-research/TR-GNN/6l17wul4")
-    run_500=api.run(f"jcoh-research/TR-GNN/wdpkopep")
-    run_1000=api.run(f"jcoh-research/TR-GNN/l16cgznv")
+    run_20=api.run(f"jcoh-research/TR-GNN/m0rieti1")
+    run_50=api.run(f"jcoh-research/TR-GNN/h8wqr4a2")
+    run_100=api.run(f"jcoh-research/TR-GNN/jynuh9it")
+    run_500=api.run(f"jcoh-research/TR-GNN/cbk8qbuk")
+    run_1000=api.run(f"jcoh-research/TR-GNN/9mjqpb0j")
 
-    run_batch_20=api.run(f"jcoh-research/TR-GNN/o4t9yv0b")
-    run_batch_50=api.run(f"jcoh-research/TR-GNN/pamm4s8r")
-    run_batch_100=api.run(f"jcoh-research/TR-GNN/ybfijskm")
-    run_batch_500=api.run(f"jcoh-research/TR-GNN/lkovaool")
-    run_batch_1000=api.run(f"jcoh-research/TR-GNN/jd9jo50q")
+    # run_batch_20=api.run(f"jcoh-research/TR-GNN/")
+    # run_batch_50=api.run(f"jcoh-research/TR-GNN/")
+    # run_batch_100=api.run(f"jcoh-research/TR-GNN/")
+    # run_batch_500=api.run(f"jcoh-research/TR-GNN/")
+    # run_batch_1000=api.run(f"jcoh-research/TR-GNN/")
 
     match config['app_num']:
         case 1:
@@ -74,33 +74,33 @@ def app_result(config:dict):
             print(others_metric_std)
             print()
 
-        case 2:
-            """
-            App 2.
-            result of evaluate_2
-            """
-            match config['num_nodes']:
-                case 20:
-                    run=run_batch_20
-                case 50:
-                    run=run_batch_50
-                case 100:
-                    run=run_batch_100
-                case 500:
-                    run=run_batch_500
-                case 1000:
-                    run=run_batch_1000
-            history=run.history(keys=["model","seed","lr","batch_size","acc","macrof1","prauc","mcc"])
-            df=pd.DataFrame(history)
+        # case 2:
+        #     """
+        #     App 2.
+        #     result of evaluate_2
+        #     """
+        #     match config['num_nodes']:
+        #         case 20:
+        #             run=run_batch_20
+        #         case 50:
+        #             run=run_batch_50
+        #         case 100:
+        #             run=run_batch_100
+        #         case 500:
+        #             run=run_batch_500
+        #         case 1000:
+        #             run=run_batch_1000
+        #     history=run.history(keys=["model","seed","lr","batch_size","acc","macrof1","prauc","mcc"])
+        #     df=pd.DataFrame(history)
             
-            metric_mean=df.groupby(["model","batch_size"])[[
-                "acc",
-                "macrof1",
-                "prauc",
-                "mcc"
-            ]].mean()
-            print(f"Evaluate Result:")
-            print(metric_mean)
+        #     metric_mean=df.groupby(["model","batch_size"])[[
+        #         "acc",
+        #         "macrof1",
+        #         "prauc",
+        #         "mcc"
+        #     ]].mean()
+        #     print(f"Evaluate Result:")
+        #     print(metric_mean)
 
 if __name__=="__main__":
     """
