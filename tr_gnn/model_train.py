@@ -55,6 +55,8 @@ class ModelTrainer:
             """
             Early stopping
             """
+
+
             if config['early_stop']:
                 val_acc=perform['acc']
                 # val_acc=perform['prauc']
@@ -63,6 +65,12 @@ class ModelTrainer:
                     model=pre_model
                     print(f"Early Stopping in epoch {epoch+1}")
                     break
+
+    @staticmethod
+    def compute_validate_loss(model,data_loader_list=None):
+        device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model.to(device)
+        model.eval()
 
     @staticmethod
     def test(model,data_loader_list=None):
