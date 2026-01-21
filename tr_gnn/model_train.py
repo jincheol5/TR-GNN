@@ -44,33 +44,45 @@ class ModelTrainer:
                 wandb.log({
                     f"loss":epoch_loss,
                 },step=epoch)
-            print(f"epoch loss: {epoch_loss}")
+            print(f"epoch train loss: {epoch_loss}")
+
+            """
+            Early stopping
+            """
+            val_loss=ModelTrainer.compute_validate_loss(model=model,data_loader_list=val_data_loader_list)
+            print(f"epoch val loss: {val_loss}")
+            if config['early_stop']:
+                pre_model=early_stop(val_loss=val_loss,model=model)
+                if early_stop.early_stop:
+                    model=pre_model
+                    print(f"Early Stopping in epoch {epoch+1}")
+                    break
 
             """
             validate
             """
             perform=ModelTrainer.test(model=model,data_loader_list=val_data_loader_list)
             print(f"{epoch+1} epoch TR validation Acc: {perform['acc']} Macro-f1: {perform['macrof1']} PR-AUC: {perform['prauc']} MCC: {perform['mcc']}")
-            
-            """
-            Early stopping
-            """
-
-
-            if config['early_stop']:
-                val_acc=perform['acc']
-                # val_acc=perform['prauc']
-                pre_model=early_stop(val_acc=val_acc,model=model)
-                if early_stop.early_stop:
-                    model=pre_model
-                    print(f"Early Stopping in epoch {epoch+1}")
-                    break
 
     @staticmethod
     def compute_validate_loss(model,data_loader_list=None):
         device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model.to(device)
         model.eval()
+
+        """
+        compute validate loss
+        """
+        loss_list=[]
+        with torch.no_grad():
+            for data_loader in tqdm(data_loader_list,desc=f"Evaluating..."):
+                label_list=[batch['label'] for batch in data_loader]
+                label_list=[label.to(device) for label in label_list]
+                
+                logit_list=model(data_loader=data_loader,device=device,mode="test")
+                loss=Metrics.compute_TR_loss(logit_list=logit_list,label_list=label_list)
+                loss_list.append(loss)
+        return torch.stack(loss_list).mean().item()
 
     @staticmethod
     def test(model,data_loader_list=None):
