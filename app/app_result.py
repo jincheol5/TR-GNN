@@ -31,17 +31,17 @@ def app_result(config:dict):
     # run_batch_1000=api.run(f"jcoh-research/TR-GNN/g9bw3rxy")
 
     ### val loss
-    run_20=api.run(f"jcoh-research/TR-GNN/")
-    run_50=api.run(f"jcoh-research/TR-GNN/")
-    run_100=api.run(f"jcoh-research/TR-GNN/")
-    run_500=api.run(f"jcoh-research/TR-GNN/")
-    run_1000=api.run(f"jcoh-research/TR-GNN/")
+    run_20=api.run(f"jcoh-research/TR-GNN/ohbjub41")
+    run_50=api.run(f"jcoh-research/TR-GNN/z4osandu")
+    run_100=api.run(f"jcoh-research/TR-GNN/j1k0pqyu")
+    run_500=api.run(f"jcoh-research/TR-GNN/ym58ldel")
+    run_1000=api.run(f"jcoh-research/TR-GNN/cinon7am")
 
-    run_batch_20=api.run(f"jcoh-research/TR-GNN/")
-    run_batch_50=api.run(f"jcoh-research/TR-GNN/")
-    run_batch_100=api.run(f"jcoh-research/TR-GNN/")
-    run_batch_500=api.run(f"jcoh-research/TR-GNN/")
-    run_batch_1000=api.run(f"jcoh-research/TR-GNN/")
+    run_batch_20=api.run(f"jcoh-research/TR-GNN/f58u9ipv")
+    run_batch_50=api.run(f"jcoh-research/TR-GNN/si1xix7x")
+    run_batch_100=api.run(f"jcoh-research/TR-GNN/nxmrmw7z")
+    run_batch_500=api.run(f"jcoh-research/TR-GNN/eawpna9y")
+    run_batch_1000=api.run(f"jcoh-research/TR-GNN/k2t8k2hg")
 
     match config['app_num']:
         case 1:
