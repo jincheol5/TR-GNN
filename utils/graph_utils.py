@@ -36,6 +36,74 @@ class GraphUtils:
             ]
 
     @staticmethod
+    def set_edge_timestamp_uniformly(graph:nx.DiGraph):
+        """
+        nx.DiGraph의 각 edge에 1~5개의 timestamp 랜덤하게 배정
+        timestamp 범위: 0 ~ 1000 (unix timestamp day)
+        timestamp 범위를 10등분 하여 각 세부 범위 시간 값들이 균등하게 배정되도록 설정
+        """
+        # 각 edge가 가질 timestamp 개수 결정
+        edge_num_timestamps={
+            edge:random.randint(1,5)
+            for edge in graph.edges()
+        }
+
+        # 그래프 전체 timestamp 개수
+        total_timestamps=sum(edge_num_timestamps.values())
+
+        # 100 단위 구간
+        ranges=[
+            (0,100),
+            (101,200),
+            (201,300),
+            (301,400),
+            (401,500),
+            (501,600),
+            (601,700),
+            (701,800),
+            (801,900),
+            (901,1000),
+        ]
+
+        # 각 구간에 들어갈 기본 timestamp 개수
+        base_count=total_timestamps//len(ranges)
+
+        # 균등 분배 후 남는 timestamp 개수
+        remainder=total_timestamps%len(ranges)
+
+        # 남는 timestamp를 받을 구간을 랜덤하게 선택
+        extra_ranges=set(
+            random.sample(
+                range(len(ranges)),
+                remainder
+            )
+        )
+
+        timestamps=[]
+        for i,(start,end) in enumerate(ranges):
+            count=base_count
+
+            # 나머지가 배정된 구간은 1개 추가
+            if i in extra_ranges:
+                count += 1
+
+            timestamps.extend([
+                random.randint(start,end)
+                for _ in range(count)
+            ])
+
+        # 전체 timestamp 랜덤하게 섞기
+        random.shuffle(timestamps)
+
+        # 각 edge에 timestamp 배분
+        idx=0
+        for edge,num_timestamps in edge_num_timestamps.items():
+            graph.edges[edge]["t"]=timestamps[
+                idx:idx+num_timestamps
+            ]
+            idx+=num_timestamps
+
+    @staticmethod
     def convert_nx_graph_to_df(graph:nx.DiGraph)->pd.DataFrame:
         """
         Return:
@@ -97,7 +165,7 @@ class GraphGenerator:
             ladder_graph=nx.ladder_graph(n_node//2)
             GraphUtils.remove_self_loop(graph=ladder_graph)
             GraphUtils.to_directed_graph(graph=ladder_graph)
-            GraphUtils.set_edge_timestamp(graph=ladder_graph)
+            GraphUtils.set_edge_timestamp_uniformly(graph=ladder_graph)
             ladder_graph_list.append(ladder_graph)
 
             # 2. generate 2D grid graph
@@ -107,14 +175,14 @@ class GraphGenerator:
             grid_graph=grid_graph.subgraph(range(n_node)).copy()
             GraphUtils.remove_self_loop(graph=grid_graph)
             GraphUtils.to_directed_graph(graph=grid_graph)
-            GraphUtils.set_edge_timestamp(graph=grid_graph)
+            GraphUtils.set_edge_timestamp_uniformly(graph=grid_graph)
             grid_graph_list.append(grid_graph)
 
             # 3. generate tree graph
             tree_graph=nx.random_labeled_tree(n_node)
             GraphUtils.remove_self_loop(graph=tree_graph)
             GraphUtils.to_directed_graph(graph=tree_graph)
-            GraphUtils.set_edge_timestamp(graph=tree_graph)
+            GraphUtils.set_edge_timestamp_uniformly(graph=tree_graph)
             tree_graph_list.append(tree_graph)
 
             # 4. generate Erdos-Renyi graph
@@ -122,7 +190,7 @@ class GraphGenerator:
             erdos_renyi_graph=nx.erdos_renyi_graph(n_node,p)
             GraphUtils.remove_self_loop(graph=erdos_renyi_graph)
             GraphUtils.to_directed_graph(graph=erdos_renyi_graph)
-            GraphUtils.set_edge_timestamp(graph=erdos_renyi_graph)
+            GraphUtils.set_edge_timestamp_uniformly(graph=erdos_renyi_graph)
             erdos_renyi_graph_list.append(erdos_renyi_graph)
 
             # 5. generate Barabasi-Albert graph
@@ -132,7 +200,7 @@ class GraphGenerator:
             barabasi_albert_graph=nx.barabasi_albert_graph(n_node,m)
             GraphUtils.remove_self_loop(graph=barabasi_albert_graph)
             GraphUtils.to_directed_graph(graph=barabasi_albert_graph)
-            GraphUtils.set_edge_timestamp(graph=barabasi_albert_graph)
+            GraphUtils.set_edge_timestamp_uniformly(graph=barabasi_albert_graph)
             barabasi_albert_graph_list.append(barabasi_albert_graph)
 
             # 6. generate 4 community graph
@@ -152,7 +220,7 @@ class GraphGenerator:
                             community_graph.add_edge(i,j)
             GraphUtils.remove_self_loop(graph=community_graph)
             GraphUtils.to_directed_graph(graph=community_graph)
-            GraphUtils.set_edge_timestamp(graph=community_graph)
+            GraphUtils.set_edge_timestamp_uniformly(graph=community_graph)
             community_graph_list.append(community_graph)
 
             # 7. generate 4-caveman graph
@@ -172,7 +240,7 @@ class GraphGenerator:
                     caveman_graph.add_edge(u,v)
             GraphUtils.remove_self_loop(graph=caveman_graph)
             GraphUtils.to_directed_graph(graph=caveman_graph)
-            GraphUtils.set_edge_timestamp(graph=caveman_graph)
+            GraphUtils.set_edge_timestamp_uniformly(graph=caveman_graph)
             caveman_graph_list.append(caveman_graph)
         return {
             "ladder":ladder_graph_list,
