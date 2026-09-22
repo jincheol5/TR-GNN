@@ -31,7 +31,7 @@ class GraphUtils:
         for edge in graph.edges():
             num_timestamps=random.randint(1,5)
             graph.edges[edge]["t"]=[
-                random.randint(0,1000) # unix_timestamp (day) 의미
+                random.randint(0,2000) # unix_timestamp (day) 의미
                 for _ in range(num_timestamps)
             ]
 
@@ -39,7 +39,7 @@ class GraphUtils:
     def set_edge_timestamp_uniformly(graph:nx.DiGraph):
         """
         nx.DiGraph의 각 edge에 1~5개의 timestamp 랜덤하게 배정
-        timestamp 범위: 0 ~ 1000 (unix timestamp day)
+        timestamp 범위: 0 ~ 2000 (unix timestamp day)
         timestamp 범위를 10등분 하여 각 세부 범위 시간 값들이 균등하게 배정되도록 설정
         """
         # 각 edge가 가질 timestamp 개수 결정
@@ -53,16 +53,16 @@ class GraphUtils:
 
         # 100 단위 구간
         ranges=[
-            (0,100),
-            (101,200),
-            (201,300),
-            (301,400),
-            (401,500),
-            (501,600),
-            (601,700),
-            (701,800),
-            (801,900),
-            (901,1000),
+            (0,200),
+            (201,400),
+            (401,600),
+            (601,800),
+            (801,1000),
+            (1001,1200),
+            (1201,1400),
+            (1401,1600),
+            (1601,1800),
+            (1801,2000),
         ]
 
         # 각 구간에 들어갈 기본 timestamp 개수
@@ -85,7 +85,7 @@ class GraphUtils:
 
             # 나머지가 배정된 구간은 1개 추가
             if i in extra_ranges:
-                count += 1
+                count+=1
 
             timestamps.extend([
                 random.randint(start,end)
