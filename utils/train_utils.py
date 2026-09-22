@@ -159,7 +159,7 @@ class TrainUtils:
         }
 
     @staticmethod
-    def get_TR_result(
+    def get_TR_result_using_Temporal_BFS(
             graph:TemporalGraph,
             data_loader:DataLoader
         )->dict[str,torch.Tensor]:
@@ -195,7 +195,7 @@ class TrainUtils:
         for seq_idx,(_,_,event_t,_) in enumerate(tqdm(data_loader,desc="Compute TR result tensor...")):
             query_time=event_t.max().item()
             for source in range(1,n_node+1):
-                TR_info=graph.compute_TR(
+                TR_info=graph.compute_TR_using_Temporal_BFS(
                     source=source,
                     query_time=query_time
                 )

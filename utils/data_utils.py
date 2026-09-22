@@ -36,6 +36,45 @@ class DataUtils:
         return graph_df_list
 
     @staticmethod
+    def save_TR_result_to_pt(
+            TR_result:dict[str,torch.Tensor],
+            dataset_name:Literal[
+                "enron",
+                "CollegeMsg",
+                "bitcoin-alpha",
+                "bitcoin-otc"
+            ],
+            purpose:Literal["train","val","test"],
+            batch_size:int
+        ):
+        """
+        SNAP, ZENODO dataset들의 TR_result를 저장
+
+        file_name example: enron_train_B100.pt
+        """
+        file_name=f"{dataset_name}_{purpose}_B{batch_size}.pt"
+        file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result",dataset_name,purpose,file_name)
+        os.makedirs(os.path.dirname(file_path),exist_ok=True)
+        torch.save(TR_result,file_path)
+        print(f"Save {file_name}!")
+
+    @staticmethod
+    def load_TR_result(
+            dataset_name:Literal[
+                "enron",
+                "CollegeMsg",
+                "bitcoin-alpha",
+                "bitcoin-otc"
+            ],
+            purpose:Literal["train","val","test"],
+            batch_size:int
+        )->dict[str,torch.Tensor]:
+        file_name=f"{dataset_name}_{purpose}_B{batch_size}.pt"
+        file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result",dataset_name,purpose,file_name)
+        TR_result=torch.load(file_path)
+        return TR_result
+
+    @staticmethod
     def save_TR_result_list_to_pt(
             TR_result_list:list[dict[str,torch.Tensor]],
             file_name:str,
@@ -58,7 +97,7 @@ class DataUtils:
     def load_TR_result_list(
             file_name:str,
             purpose:Literal["train","val","test"],
-        ):
+        )->list[dict[str,torch.Tensor]]:
         """
         7-type graph들의 각 type별 graph_list의 TR_result_list를 로드
         """
@@ -66,11 +105,6 @@ class DataUtils:
         file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result","7-type",purpose,file_name)
         TR_result_list=torch.load(file_path)
         return TR_result_list
-
-
-
-
-
 
     @staticmethod
     def _preprocess_snap_dataset(
