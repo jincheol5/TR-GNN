@@ -12,10 +12,13 @@ class DataUtils:
     def save_graph_df_list_to_pickle(
             graph_df_list,
             file_name:str,
-            mode:Literal["train","val","test"],
+            purpose:Literal["train","val","test"],
         ):
+        """
+        file_name example: ladder_train_N100.pkl
+        """
         file_name=f"{file_name}.pkl"
-        file_path=os.path.join(BASE_PATH,"TR-GNN","graph",mode,file_name)
+        file_path=os.path.join(BASE_PATH,"TR-GNN","graph",purpose,file_name)
         os.makedirs(os.path.dirname(file_path),exist_ok=True)
         with open(file_path,'wb') as f:
             pickle.dump(graph_df_list,f)
@@ -24,60 +27,50 @@ class DataUtils:
     @staticmethod
     def load_graph_df_list_pickle(
             file_name:str,
-            mode:Literal["train","val","test"]
+            purpose:Literal["train","val","test"]
         ):
         file_name=f"{file_name}.pkl"
-        file_path=os.path.join(BASE_PATH,"TR-GNN","graph",mode,file_name)
+        file_path=os.path.join(BASE_PATH,"TR-GNN","graph",purpose,file_name)
         with open(file_path,'rb') as f:
             graph_df_list=pickle.load(f)
         return graph_df_list
 
-
-
-
-
-
-
     @staticmethod
-    def save_to_pt(
-            data,
+    def save_TR_result_list_to_pt(
+            TR_result_list:list[dict[str,torch.Tensor]],
             file_name:str,
-            dir_type:Literal[
-                "graph",
-                "trajectory"
-            ],
-            mode:Literal[
-                "train",
-                "val",
-                "test"
-            ]
+            purpose:Literal["train","val","test"],
         ):
-        file_name=file_name+".pt"
-        file_path=os.path.join(BASE_PATH,dir_type,mode,file_name)
+        """
+        7-type graph들의 각 type별 graph_list의 TR_result_list를 저장
+
+        file_name example: ladder_train_N100_B100.pt
+        - n_node: 100
+        - batch_size: 100
+        """
+        file_name=f"{file_name}.pt"
+        file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result","7-type",purpose,file_name)
         os.makedirs(os.path.dirname(file_path),exist_ok=True)
-        torch.save(data,file_path)
-        print(f"Complete to save {file_name}!")
+        torch.save(TR_result_list,file_path)
+        print(f"Save {file_name}!")
 
     @staticmethod
-    def load_pt(
+    def load_TR_result_list(
             file_name:str,
-            dir_type:Literal[
-                "graph",
-                "trajectory"
-            ],
-            mode:Literal[
-                "train",
-                "val",
-                "test"
-            ]
+            purpose:Literal["train","val","test"],
         ):
-        file_name=file_name+".pt"
-        file_path=os.path.join(BASE_PATH,dir_type,mode,file_name)
-        data=torch.load(
-            file_path,
-            weights_only=False
-        )
-        return data
+        """
+        7-type graph들의 각 type별 graph_list의 TR_result_list를 로드
+        """
+        file_name=f"{file_name}.pt"
+        file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result","7-type",purpose,file_name)
+        TR_result_list=torch.load(file_path)
+        return TR_result_list
+
+
+
+
+
 
     @staticmethod
     def _preprocess_snap_dataset(

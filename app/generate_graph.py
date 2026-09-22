@@ -23,11 +23,11 @@ def main():
     graph_list_dict_test_1000=GraphGenerator.generate_7_type_graphs(n_graph=5,n_node=1000)
 
     all_graph_list_dict={
-        "train_100":graph_list_dict_train_100,
-        "val_100":graph_list_dict_val_100,
-        "test_100":graph_list_dict_test_100,
-        "test_500":graph_list_dict_test_500,
-        "test_1000":graph_list_dict_test_1000
+        "train_N100":graph_list_dict_train_100,
+        "val_N100":graph_list_dict_val_100,
+        "test_N100":graph_list_dict_test_100,
+        "test_N500":graph_list_dict_test_500,
+        "test_N1000":graph_list_dict_test_1000
     }
 
     for key,graph_list_dict in tqdm(
@@ -35,7 +35,7 @@ def main():
             total=len(all_graph_list_dict),
             desc=f"Convert to graph_df and Save..."
         ):
-        mode,_=key.split("_")
+        purpose,_=key.split("_")
         graph_df_list_dict={
             "ladder":[],
             "grid":[],
@@ -56,7 +56,7 @@ def main():
                 DataUtils.save_graph_df_list_to_pickle(
                     graph_df_list=graph_df_list,
                     file_name=f"{graph_type}_{key}",
-                    mode=mode
+                    purpose=purpose
                 )
 
 if __name__=="__main__":
