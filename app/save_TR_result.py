@@ -52,8 +52,6 @@ if __name__=="__main__":
     Execute app
     """
     parser=argparse.ArgumentParser()
-
-    args=parser.parse_args()
     parser.add_argument("--dataset_name",
         type=str,
         choices=[
@@ -62,14 +60,15 @@ if __name__=="__main__":
             "bitcoin-alpha",
             "bitcoin-otc"
         ],
-        default="ladder"
+        default="enron"
     )
     parser.add_argument("--purpose",
         type=str,
         choices=["train","val","test"],
-        default="ladder"
+        default="train"
     )
     parser.add_argument("--batch_size",type=int,default=200)
+    args=parser.parse_args()
     app_config={
         "dataset_name":args.dataset_name,
         "purpose":args.purpose,
