@@ -7,34 +7,6 @@ from utils import DataUtils,TrainUtils,TemporalGraphDataset
 def main(**kwargs):
     """
     """
-    graph_type=kwargs["graph_type"]
-    purpose=kwargs["purpose"]
-    n_node=kwargs["n_node"]
-    batch_size=kwargs["batch_size"]
-
-    graph_df_list_file_name=f"{graph_type}_{purpose}_N{n_node}"
-    graph_df_list=DataUtils.load_graph_df_list_pickle(
-        file_name=graph_df_list_file_name,
-        purpose=purpose
-    )
-
-    TR_result_list=[]
-    for graph_df in tqdm(
-            graph_df_list,
-            desc=f"Compute TR_result of each {graph_type}_{purpose}_N{n_node}_B{batch_size} graph_df..."
-        ):
-        graph=TemporalGraph(graph_df=graph_df)
-        graph_dataset=TemporalGraphDataset(df=graph_df)
-        graph_loader=DataLoader(dataset=graph_dataset,batch_size=batch_size,shuffle=False)
-        TR_result=TrainUtils.get_TR_result(graph=graph,data_loader=graph_loader)
-        TR_result_list.append(TR_result)
-
-    TR_result_list_file_name=f"{graph_type}_{purpose}_N{n_node}_B{batch_size}"
-    DataUtils.save_TR_result_list_to_pt(
-        TR_result_list=TR_result_list,
-        file_name=TR_result_list_file_name,
-        purpose=purpose
-    )
 
 if __name__=="__main__":
     """

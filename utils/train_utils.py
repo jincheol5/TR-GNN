@@ -7,7 +7,7 @@ from typing import Literal
 from tqdm import tqdm
 from torch.utils.data import Dataset,DataLoader
 from graph import TemporalGraph
-from utils import SamplingUtils
+from .sampling_utils import SamplingUtils
 
 class TemporalGraphDataset(Dataset):
     def __init__(self,df:pd.DataFrame):
@@ -237,7 +237,7 @@ class TrainUtils:
         Return:
             TR_sample_list
         """
-        TR_label=TR_result["TR_label"]
+        TR_label=TR_result["label"]
         TR_sample_list=[]
         for batch_idx,(src,dst,event_t,_) in tqdm(
                 enumerate(data_loader),
