@@ -7,6 +7,7 @@ from typing import Literal
 from tqdm import tqdm
 from torch.utils.data import Dataset,DataLoader
 from graph import TemporalGraph
+from utils import SamplingUtils
 
 class TemporalGraphDataset(Dataset):
     def __init__(self,df:pd.DataFrame):
@@ -217,3 +218,48 @@ class TrainUtils:
             "last_t":TR_last_t,
             "first_t":TR_first_t
         }
+
+    @staticmethod
+    def get_TR_sample_list(
+            data_loader:DataLoader,
+            n_pair:int,
+            source:int|None=None,
+            TR_result:dict[str,torch.Tensor]|None=None,
+            sampling:Literal["independent","dependent"]=f"dependent"
+        )->list[dict[str,torch.Tensor]]:
+        """
+        Input:
+            data_loader
+            n_pair
+            source
+            TR_result
+            sampling
+        Return:
+            TR_sample_list
+        """
+        TR_label=TR_result["TR_label"]
+        TR_sample_list=[]
+        for batch_idx,(src,dst,event_t,_) in tqdm(
+                enumerate(data_loader),
+                desc="Generating TR samples..."
+            ):
+            sources=torch.unique(torch.cat([src,dst])).tolist()
+            query_time=event_t.max().item()
+            match sampling:
+                case "independent":
+                    TR_sample=SamplingUtils.source_independent_TR_sampling(
+                        sources=sources,
+                        n_pair=n_pair,
+                        query_time=query_time,
+                        TR_label=TR_label[batch_idx]
+                    )
+                case "dependent":
+                    TR_sample=SamplingUtils.source_dependent_TR_sampling(
+                        source=source,
+                        n_pair=n_pair,
+                        query_time=query_time,
+                        TR_label=TR_label[batch_idx],
+                        updated_nodes=sources
+                    )
+            TR_sample_list.append(TR_sample)
+        return TR_sample_list

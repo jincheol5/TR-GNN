@@ -26,9 +26,7 @@ class TGN_Graph(TemporalGraph):
         else: 
             self.set_edge_ft(edge_ft=edge_ft)
 
-    def to_device(self,
-            device:torch.device
-        ):
+    def to_device(self,device:torch.device):
         self.node_ft=self.node_ft.to(device)
         self.edge_ft=self.edge_ft.to(device)
 

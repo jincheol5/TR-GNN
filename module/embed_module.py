@@ -1,9 +1,7 @@
-import math
 import torch
 import torch.nn as nn
 from graph import TGN_Graph
-from .time_encoder import TimeEncoder
-from .mem_module import Memory
+from .time_encoder_module import TimeEncoder
 from .attn_module import TemporalGraphAttn
 
 class EmbeddingModule(nn.Module):
