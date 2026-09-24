@@ -144,6 +144,7 @@ class ModelTrainer:
                     model=pre_model
                     print(f"Early Stop in epoch {epoch+1}")
                     break
+        return model
 
     @staticmethod
     def validate(
