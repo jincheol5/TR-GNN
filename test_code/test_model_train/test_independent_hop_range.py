@@ -96,7 +96,7 @@ def test_fn(**kwargs):
     source=source_candidates[0]
     test_sample_list=TrainUtils.get_TR_sample_list(
         data_loader=test_loader,
-        n_pair=n_pair,
+        n_pair=100,
         source=source,
         TR_result=test_TR_result,
         sampling=f"hop_range"
