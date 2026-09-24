@@ -281,21 +281,19 @@ class TrainUtils:
     def get_source_candidates(
             n_source:int,
             TR_label:torch.Tensor
-        )->torch.Tensor:
+        )->list[int]:
         """
         seq별 source의 reachability ratio를 계산하여
         다음 조건을 모두 만족하는 source 후보를 반환.
 
         조건:
             - seq 평균 reachability ratio: 40% <= mean <= 60%
-            - seq 최소 reachability ratio: min >= 30%
-            - seq 최대 reachability ratio: max <= 70%
             - padding node(id=0)는 source/destination 후보에서 제외.
 
         Input:
             TR_label: [seq_len,N+1,N+1] bool tensor
         Return:
-            source_candidates: [n_candidates,] long tensor
+            source_candidates: list[int]
         """
         _,n_node,_=TR_label.shape
         n_node=n_node-1  # padding node 제외한 실제 node 수
@@ -316,15 +314,11 @@ class TrainUtils:
         ### source별 seq 통계
         # [N]
         mean_ratio=reachability_ratio.mean(dim=0)
-        min_ratio=reachability_ratio.min(dim=0).values
-        max_ratio=reachability_ratio.max(dim=0).values
 
         ### 조건 적용
         candidate_mask=(
             (mean_ratio>=0.4) &
-            (mean_ratio<=0.6) &
-            (min_ratio>=0.3) &
-            (max_ratio<=0.7)
+            (mean_ratio<=0.6) 
         )
 
         ### 실제 source node id
