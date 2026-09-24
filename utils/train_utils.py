@@ -225,7 +225,11 @@ class TrainUtils:
             n_pair:int,
             source:int|None=None,
             TR_result:dict[str,torch.Tensor]|None=None,
-            sampling:Literal["independent","dependent"]=f"dependent"
+            sampling:Literal[
+                "independent",
+                "dependent",
+                "hop_range"
+            ]=f"dependent"
         )->list[dict[str,torch.Tensor]]:
         """
         Input:
@@ -238,6 +242,7 @@ class TrainUtils:
             TR_sample_list
         """
         TR_label=TR_result["label"]
+        TR_hop=TR_result["hop"]
         TR_sample_list=[]
         for batch_idx,(src,dst,event_t,_) in tqdm(
                 enumerate(data_loader),
@@ -261,5 +266,80 @@ class TrainUtils:
                         TR_label=TR_label[batch_idx],
                         updated_nodes=sources
                     )
+                case "hop_range":
+                    TR_sample=SamplingUtils.hop_range_TR_sampling(
+                        source=source,
+                        n_pair=n_pair,
+                        query_time=query_time,
+                        TR_label=TR_label[batch_idx],
+                        TR_hop=TR_hop[batch_idx]
+                    )
             TR_sample_list.append(TR_sample)
         return TR_sample_list
+
+    @staticmethod
+    def get_source_candidates(
+            n_source:int,
+            TR_label:torch.Tensor
+        )->torch.Tensor:
+        """
+        seq별 source의 reachability ratio를 계산하여
+        다음 조건을 모두 만족하는 source 후보를 반환.
+
+        조건:
+            - seq 평균 reachability ratio: 40% <= mean <= 60%
+            - seq 최소 reachability ratio: min >= 30%
+            - seq 최대 reachability ratio: max <= 70%
+            - padding node(id=0)는 source/destination 후보에서 제외.
+
+        Input:
+            TR_label: [seq_len,N+1,N+1] bool tensor
+        Return:
+            source_candidates: [n_candidates,] long tensor
+        """
+        _,n_node,_=TR_label.shape
+        n_node=n_node-1  # padding node 제외한 실제 node 수
+
+        ### padding source/destination 제거
+        # [seq_len,N,N]
+        label=TR_label[:,1:,1:]
+
+        ### reachable node 개수
+        # 자기 자신 포함
+        # [seq_len,N]
+        reachable_count=label.sum(dim=2)
+
+        ### seq별 source reachability ratio
+        # [seq_len,N]
+        reachability_ratio=(reachable_count.float()/n_node)
+
+        ### source별 seq 통계
+        # [N]
+        mean_ratio=reachability_ratio.mean(dim=0)
+        min_ratio=reachability_ratio.min(dim=0).values
+        max_ratio=reachability_ratio.max(dim=0).values
+
+        ### 조건 적용
+        candidate_mask=(
+            (mean_ratio>=0.4) &
+            (mean_ratio<=0.6) &
+            (min_ratio>=0.3) &
+            (max_ratio<=0.7)
+        )
+
+        ### 실제 source node id
+        # index 0 -> node id 1
+        source_candidates=torch.where(candidate_mask)[0]+1
+
+        ### 후보 중 n_source개 random sampling
+        if source_candidates.numel()>n_source:
+            perm=torch.randperm(source_candidates.numel())
+            source_candidates=source_candidates[perm[:n_source]]
+
+        ### list[int] 변환
+        source_candidates=(
+            source_candidates
+            .cpu()
+            .tolist()
+        )
+        return source_candidates

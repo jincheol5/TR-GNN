@@ -322,3 +322,198 @@ class SamplingUtils:
             "query_t":query_t,
             "pos_mask":pos_mask
         }
+
+    @staticmethod
+    def hop_range_TR_sampling(
+            source:int,
+            n_pair:int,
+            query_time:float,
+            TR_label:torch.Tensor,
+            TR_hop:torch.Tensor
+        ):
+        """
+        positive pair: n_pair 개 
+            - hop_range_1: 1 <= hop < 5 -> 30%
+            - hop_range_2: 5 <= hop < 10 -> 30%
+            - hop_range_3: 10 <= hop -> 40%
+            - 각 range에서 부족한 수는 마지막에 남은 positive 후보로 채움
+        positive dst 순서: [hop_range_1, hop_range_2, hop_range_3, extra]
+
+        negative pair: n_pair 개 
+
+        Input:
+            source
+            n_pair
+            query_time
+            TR_label: [N+1,N+1] bool tensor, reachable하면 True, unreachable하면 False
+            TR_hop: [N+1,N+1] long tensor, reachable하면 shortest hop 값, unreachable하면 0
+        Return: dict
+            src: [n_sample,] long tensor
+            dst: [n_sample,] long tensor
+            label: [n_sample,] float tensor (1.0 or 0.0)
+            query_t: [n_sample,] float tensor
+            pos_mask: [n_sample,] bool tensor
+            hop_range_1_mask: [n_sample,] bool tensor
+            hop_range_2_mask: [n_sample,] bool tensor
+            hop_range_3_mask: [n_sample,] bool tensor
+        """
+        ### positive / negative 후보 생성
+        source_label=TR_label[source]
+        source_hop=TR_hop[source]
+        pos_candidates=torch.where(source_label)[0]
+        neg_candidates=torch.where(~source_label)[0]
+        # padding node(0), source 자기 자신 제외
+        pos_candidates=pos_candidates[
+            (pos_candidates!=0) &
+            (pos_candidates!=source)
+        ]
+
+        ### positive 후보를 hop range별로 분리
+        pos_hop=source_hop[pos_candidates]
+        hop_range_1_candidates=pos_candidates[
+            (pos_hop>=1) &
+            (pos_hop<5)
+        ]
+        hop_range_2_candidates=pos_candidates[
+            (pos_hop>=5) &
+            (pos_hop<10)
+        ]
+        hop_range_3_candidates=pos_candidates[
+            pos_hop>=10
+        ]
+
+        ### range별 sampling 개수
+        n_hop_range_1=int(n_pair*0.3)
+        n_hop_range_2=int(n_pair*0.3)
+        n_hop_range_3=n_pair-n_hop_range_1-n_hop_range_2
+
+        ### range_1 sampling
+        hop_range_1_dst=torch.empty(0,dtype=torch.long)
+        if hop_range_1_candidates.numel()>0:
+            perm=torch.randperm(hop_range_1_candidates.numel())
+            hop_range_1_dst=hop_range_1_candidates[
+                perm[:min(n_hop_range_1,hop_range_1_candidates.numel())]
+            ]
+
+        ### range_2 sampling
+        hop_range_2_dst=torch.empty(0,dtype=torch.long)
+        if hop_range_2_candidates.numel()>0:
+            perm=torch.randperm(hop_range_2_candidates.numel())
+            hop_range_2_dst=hop_range_2_candidates[
+                perm[:min(n_hop_range_2,hop_range_2_candidates.numel())]
+            ]
+
+        ### range_3 sampling
+        hop_range_3_dst=torch.empty(0,dtype=torch.long,)
+        if hop_range_3_candidates.numel()>0:
+            perm=torch.randperm(hop_range_3_candidates.numel())
+            hop_range_3_dst=hop_range_3_candidates[
+                perm[:min(n_hop_range_3,hop_range_3_candidates.numel())]
+            ]
+
+        ### 우선 range_1 -> range_2 -> range_3 순으로 구성
+        hop_range_dst=torch.cat([
+            hop_range_1_dst,
+            hop_range_2_dst,
+            hop_range_3_dst
+        ])
+
+        ### 부족한 positive pair를 마지막에 추가
+        remain=n_pair-hop_range_dst.numel()
+        extra_dst=torch.empty(0,dtype=torch.long,)
+        if remain>0:
+            sampled_mask=torch.isin(pos_candidates,hop_range_dst)
+            remaining_candidates=pos_candidates[~sampled_mask]
+            if remaining_candidates.numel()>0:
+                perm=torch.randperm(remaining_candidates.numel())
+                extra_dst=remaining_candidates[
+                    perm[:min(remain,remaining_candidates.numel())]
+                ]
+
+        ### 최종 positive
+        # [range_1 | range_2 | range_3 | extra]
+        pos_dst=torch.cat([
+            hop_range_1_dst,
+            hop_range_2_dst,
+            hop_range_3_dst,
+            extra_dst
+        ])
+
+        ### negative sampling
+        neg_dst=torch.empty(0,dtype=torch.long)
+        if neg_candidates.numel()>0:
+            perm=torch.randperm(neg_candidates.numel())
+            neg_dst=neg_candidates[
+                perm[:min(n_pair,neg_candidates.numel())]
+            ]
+
+        ### output
+        # [positive | negative]
+        dst=torch.cat([pos_dst,neg_dst])
+        label=torch.cat([
+            torch.ones(
+                pos_dst.numel(),
+                dtype=torch.float32
+            ),
+            torch.zeros(
+                neg_dst.numel(),
+                dtype=torch.float32
+            )
+        ])
+
+        ### positive mask
+        pos_mask=torch.zeros(
+            dst.numel(),
+            dtype=torch.bool
+        )
+        pos_mask[:pos_dst.numel()]=True
+
+        ### range mask
+        hop_range_1_mask=torch.zeros(
+            dst.numel(),
+            dtype=torch.bool
+        )
+        hop_range_2_mask=torch.zeros(
+            dst.numel(),
+            dtype=torch.bool
+        )
+        hop_range_3_mask=torch.zeros(
+            dst.numel(),
+            dtype=torch.bool
+        )
+        # range_1
+        hop_range_1_start=0
+        hop_range_1_end=hop_range_1_dst.numel()
+        hop_range_1_mask[hop_range_1_start:hop_range_1_end]=True
+
+        # range_2
+        hop_range_2_start=hop_range_1_end
+        hop_range_2_end=hop_range_2_start+hop_range_2_dst.numel()
+        hop_range_2_mask[hop_range_2_start:hop_range_2_end]=True
+
+        # range_3
+        hop_range_3_start=hop_range_2_end
+        hop_range_3_end=hop_range_3_start+hop_range_3_dst.numel()
+        hop_range_3_mask[hop_range_3_start:hop_range_3_end]=True
+
+        ### src/query time
+        src=torch.full(
+            (dst.numel(),),
+            source,
+            dtype=torch.long
+        )
+        query_t=torch.full(
+            (dst.numel(),),
+            query_time,
+            dtype=torch.float32
+        )
+        return {
+            "src":src,
+            "dst":dst,
+            "label":label,
+            "query_t":query_t,
+            "pos_mask":pos_mask,
+            "hop_range_1_mask":hop_range_1_mask,
+            "hop_range_2_mask":hop_range_2_mask,
+            "hop_range_3_mask":hop_range_3_mask
+        }

@@ -82,15 +82,27 @@ def test_fn(**kwargs):
         purpose="test"
     )
 
-    ### set val, test sample_list using random sampling
+    ### set val_sample_list using TR sampling
     val_sample_list=TrainUtils.get_TR_sample_list(
         n_pair=n_pair,
         data_loader=val_loader,
         TR_result=val_TR_result,
         sampling=f"independent"
     )
-    # test_sample_list=""
 
+    ### set test_sample_list
+    test_TR_label=test_TR_result["label"]
+    source_candidates=TrainUtils.get_source_candidates(n_source=1,TR_label=test_TR_label)
+    source=source_candidates[0]
+    test_sample_list=TrainUtils.get_TR_sample_list(
+        data_loader=test_loader,
+        n_pair=n_pair,
+        source=source,
+        TR_result=test_TR_result,
+        sampling=f"hop_range"
+    )
+
+    ### model별 수행
     match kwargs["model_name"]:
         case "TGAT":
             """
@@ -136,14 +148,17 @@ def test_fn(**kwargs):
                 TR_result=train_TR_result,
                 **model_config
             )
-            # evaluate_result=GNNModelTrainer.evaluate(
-            #     model=model,
-            #     val_loader=val_loader,
-            #     test_loader=test_loader,
-            #     test_sample_list=test_sample_list,
-            #     **model_config
-            # )
-            # print(f"Evaluate ACC of {kwargs['model_name']} using {kwargs['sampling']} TR Sampling: {evaluate_result['acc']}")
+            evaluate_result=ModelTrainer.evaluate_hop_range(
+                model=model,
+                val_loader=val_loader,
+                test_loader=test_loader,
+                test_sample_list=test_sample_list,
+                **model_config
+            )
+            print(f"Evaluate ACC of {kwargs['model_name']}: {evaluate_result['acc']}")
+            print(f"Evaluate hop_range_1 (1<=hop<5) ACC of {kwargs['model_name']}: {evaluate_result['hop_range_1_acc']}")
+            print(f"Evaluate hop_range_2 (5<=hop<10) ACC of {kwargs['model_name']}: {evaluate_result['hop_range_2_acc']}")
+            print(f"Evaluate hop_range_3 (10<=hop) ACC of {kwargs['model_name']}: {evaluate_result['hop_range_3_acc']}")
 
         case "TGN":
             ### TGN 학습 관련 파라미터
@@ -194,14 +209,17 @@ def test_fn(**kwargs):
                 TR_result=train_TR_result,
                 **model_config
             )
-            # evaluate_result=GNNModelTrainer.evaluate(
-            #     model=model,
-            #     val_loader=val_loader,
-            #     test_loader=test_loader,
-            #     test_sample_list=test_sample_list,
-            #     **model_config
-            # )
-            # print(f"Evaluate ACC of {kwargs['model_name']} using {kwargs['sampling']} TR Sampling: {evaluate_result['acc']}")
+            evaluate_result=ModelTrainer.evaluate_hop_range(
+                model=model,
+                val_loader=val_loader,
+                test_loader=test_loader,
+                test_sample_list=test_sample_list,
+                **model_config
+            )
+            print(f"Evaluate ACC of {kwargs['model_name']}: {evaluate_result['acc']}")
+            print(f"Evaluate hop_range_1 (1<=hop<5) ACC of {kwargs['model_name']}: {evaluate_result['hop_range_1_acc']}")
+            print(f"Evaluate hop_range_2 (5<=hop<10) ACC of {kwargs['model_name']}: {evaluate_result['hop_range_2_acc']}")
+            print(f"Evaluate hop_range_3 (10<=hop) ACC of {kwargs['model_name']}: {evaluate_result['hop_range_3_acc']}")
 
         case "DyGFormer":
             ### set DyGFormer graph
@@ -271,14 +289,17 @@ def test_fn(**kwargs):
                 TR_result=train_TR_result,
                 **model_config
             )
-            # evaluate_result=GNNModelTrainer.evaluate(
-            #     model=model,
-            #     val_loader=val_loader,
-            #     test_loader=test_loader,
-            #     test_sample_list=test_sample_list,
-            #     **model_config
-            # )
-            # print(f"Evaluate ACC of {kwargs['model_name']} using {kwargs['sampling']} TR Sampling: {evaluate_result['acc']}")
+            evaluate_result=ModelTrainer.evaluate_hop_range(
+                model=model,
+                val_loader=val_loader,
+                test_loader=test_loader,
+                test_sample_list=test_sample_list,
+                **model_config
+            )
+            print(f"Evaluate ACC of {kwargs['model_name']}: {evaluate_result['acc']}")
+            print(f"Evaluate hop_range_1 (1<=hop<5) ACC of {kwargs['model_name']}: {evaluate_result['hop_range_1_acc']}")
+            print(f"Evaluate hop_range_2 (5<=hop<10) ACC of {kwargs['model_name']}: {evaluate_result['hop_range_2_acc']}")
+            print(f"Evaluate hop_range_3 (10<=hop) ACC of {kwargs['model_name']}: {evaluate_result['hop_range_3_acc']}")
 
         case "ReaCH-TGN":
             ### ReaCH-TGN 학습 관련 파라미터
