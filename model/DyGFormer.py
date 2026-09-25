@@ -13,11 +13,10 @@ class DyGFormer(nn.Module):
             common_dim:int,
             embed_dim:int,
             graph:DyGFormer_Graph,
-            n_neighbor:int,
             n_layer:int,
             n_head:int,
-            patch_size:int,
-            max_seq_len:int
+            max_history_len:int,
+            patch_size:int
         ):
         super().__init__()
         self.node_dim=node_dim
@@ -28,11 +27,10 @@ class DyGFormer(nn.Module):
         self.common_dim=common_dim
         self.embed_dim=embed_dim
         self.graph=graph
-        self.n_neighbor=n_neighbor
         self.n_layer=n_layer
         self.n_head=n_head
+        self.max_history_len=max_history_len
         self.patch_size=patch_size
-        self.max_seq_len=max_seq_len
 
         # DyGFormer Module
         self.module=DyGFormer_Module(graph=graph)
@@ -126,7 +124,7 @@ class DyGFormer(nn.Module):
         src_result=self.graph.get_history_seq(
             node=src,
             event_t=event_t,
-            n_neighbor=self.n_neighbor
+            max_history_len=self.max_history_len
         )
         src_node_seq_list=src_result["node"]
         src_edge_seq_list=src_result["edge"]
@@ -135,7 +133,7 @@ class DyGFormer(nn.Module):
         dst_result=self.graph.get_history_seq(
             node=dst,
             event_t=event_t,
-            n_neighbor=self.n_neighbor
+            max_history_len=self.max_history_len
         )
         dst_node_seq_list=dst_result["node"]
         dst_edge_seq_list=dst_result["edge"]
@@ -146,8 +144,7 @@ class DyGFormer(nn.Module):
             node_seq_list=src_node_seq_list,
             edge_seq_list=src_edge_seq_list,
             ts_seq_list=src_ts_seq_list,
-            patch_size=self.patch_size,
-            max_seq_len=self.max_seq_len
+            patch_size=self.patch_size
         )
         src_seq=src_result["node_seq"]
         src_ts_seq=src_result["ts_seq"]
@@ -158,8 +155,7 @@ class DyGFormer(nn.Module):
             node_seq_list=dst_node_seq_list,
             edge_seq_list=dst_edge_seq_list,
             ts_seq_list=dst_ts_seq_list,
-            patch_size=self.patch_size,
-            max_seq_len=self.max_seq_len
+            patch_size=self.patch_size
         )
         dst_seq=dst_result["node_seq"]
         dst_ts_seq=dst_result["ts_seq"]
@@ -190,6 +186,10 @@ class DyGFormer(nn.Module):
         ### 5. encoding timespan using time_encoder
         src_ts_seq_vec=self.time_encoder(src_ts_seq) 
         dst_ts_seq_vec=self.time_encoder(dst_ts_seq)
+
+        # 공식 구현과 동일하게 패딩 위치의 시간 벡터를 0으로 설정
+        src_ts_seq_vec[src_seq==0]=0.0
+        dst_ts_seq_vec[dst_seq==0]=0.0
 
         ### 6. encoding co_vec using NCoE
         src_co_vec_0=src_co_vec[:,:,0:1] 

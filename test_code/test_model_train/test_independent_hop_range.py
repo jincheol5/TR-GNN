@@ -233,36 +233,36 @@ def test_fn(**kwargs):
             seed=1
             graph.set_random_seed(seed=seed)
 
-            ### DyGFormer 모델 관련 파라미터
-            max_seq_len=10
-            patch_size=5
-
-            ### DyGFormer 학습 관련 파라미터
+            ### DyGFormer 하이퍼 파라미터
             co_dim=32
             common_dim=32
+            max_history_len=10
+            patch_size=5
 
             ### model config
             model_config={
+                # 공동 하이퍼 파라미터
                 "model_name":kwargs["model_name"],
                 "seed":seed,
                 "batch_size":batch_size,
                 "n_pair":n_pair,
                 "sampling":sampling,
                 "n_layer":n_layer,
-                "n_neighbor":n_neighbor,
                 "n_head":n_head,
-                "max_seq_len":max_seq_len,
-                "patch_size":patch_size,
                 "latent_dim":latent_dim,
                 "time_dim":time_dim,
-                "co_dim":co_dim,
-                "common_dim":common_dim,
                 "embed_dim":embed_dim,
                 "epoch":epoch,
                 "lr":lr,
                 "optimizer":optimizer,
                 "early_stop":early_stop,
-                "patience":patience
+                "patience":patience,
+
+                # DyGFormer 하이퍼 파라미터
+                "co_dim":co_dim,
+                "common_dim":common_dim,
+                "max_history_len":max_history_len,
+                "patch_size":patch_size
             }
 
             ### set model and train
@@ -274,12 +274,11 @@ def test_fn(**kwargs):
                 co_dim=co_dim,
                 common_dim=common_dim,
                 embed_dim=embed_dim,
-                max_seq_len=max_seq_len,
-                patch_size=patch_size,
                 graph=graph,
-                n_neighbor=n_neighbor,
                 n_layer=n_layer,
-                n_head=n_head
+                n_head=n_head,
+                max_history_len=max_history_len,
+                patch_size=patch_size
             )
             model=ModelTrainer.train(
                 model=model,
