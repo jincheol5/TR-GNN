@@ -4,7 +4,7 @@ from typing_extensions import Literal
 from graph import TGN_Graph
 from module import TimeEncoder,Memory,GraphAttnEmbedding,GRUMemoryUpdater,TR_Decoder
 
-class TGN(nn.Module):
+class ReaCH_TGN(nn.Module):
     def __init__(self,
             node_dim:int,
             edge_dim:int,
@@ -86,7 +86,7 @@ class TGN(nn.Module):
             event_t:torch.Tensor
         ):
         """
-        eventstream에 대해서 model의 memory state 업데이트
+        eventstream에 대해서 model의 memory update
         """
         mem_vec=self.memory.get_mem_vec()
         mem_t=self.memory.get_mem_t()
@@ -116,6 +116,62 @@ class TGN(nn.Module):
         TR sample의 src, dst node들의 embedding vector 반환.
         """
         mem_vec=self.memory.get_mem_vec()
+        batch_size=src.size(0) 
+        tar=torch.concat([src,dst],dim=0) 
+        tar_t=torch.cat([event_t,event_t],dim=0)
+        embedded_tar_vec=self.encoder.compute_embedding(
+            tar=tar,
+            tar_t=tar_t,
+            mem_vec=mem_vec,
+            n_layer=self.n_layer
+        )
+        src_vec=embedded_tar_vec[:batch_size]
+        dst_vec=embedded_tar_vec[batch_size:]
+        return {
+            "src_vec":src_vec,
+            "dst_vec":dst_vec
+        }
+
+    """
+    For Contrastive Learning
+    - get_updated_mem_vec
+    - get_embedding_result
+    """
+    def get_updated_mem_vec(self,
+            src:torch.Tensor,
+            dst:torch.Tensor,
+            edge:torch.Tensor,
+            event_t:torch.Tensor
+        ):
+        """
+        ReaCH-TGN의 Contrastive Learning을 위한 함수
+        Temporal Augmentation 된 eventstream에 대해서 업데이트가 수행된 메모리 결과 반환
+
+        Return: 
+            updated_mem_vec: [unique_N,mem_dim]
+        """
+        mem_vec=self.memory.get_mem_vec()
+        mem_t=self.memory.get_mem_t()
+        updated_result=self.memory_updater.update_memory(
+            src=src,
+            dst=dst,
+            edge=edge,
+            event_t=event_t,
+            mem_vec=mem_vec,
+            mem_t=mem_t
+        )
+        updated_mem_vec=updated_result["mem_vec"]
+        return updated_mem_vec
+
+    def get_embedding_result(self,
+            src:torch.Tensor,
+            dst:torch.Tensor,
+            event_t:torch.Tensor,
+            mem_vec:torch.Tensor
+        ):
+        """
+        ReaCH-TGN의 Contrastive Learning을 위한 함수
+        """
         batch_size=src.size(0) 
         tar=torch.concat([src,dst],dim=0) 
         tar_t=torch.cat([event_t,event_t],dim=0)
