@@ -25,7 +25,7 @@ def main(**kwargs):
     n_head=4
 
     ### TGN 하이퍼 파라미터
-    msg_fn=f"mlp",
+    msg_fn=f"mlp"
     aggr_fn=f"last"
 
     ### DyGFormer 하이퍼 파라미터
