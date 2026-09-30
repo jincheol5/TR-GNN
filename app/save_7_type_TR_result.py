@@ -13,8 +13,6 @@ if __name__=="__main__":
     Execute app
     """
     parser=argparse.ArgumentParser()
-
-    args=parser.parse_args()
     parser.add_argument("--graph_type",
         type=str,
         choices=[
@@ -39,6 +37,7 @@ if __name__=="__main__":
         default=100
     )
     parser.add_argument("--batch_size",type=int,default=200)
+    args=parser.parse_args()
     app_config={
         "graph_type":args.graph_type,
         "purpose":args.purpose,
