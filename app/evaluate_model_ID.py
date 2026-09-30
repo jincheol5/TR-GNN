@@ -158,10 +158,8 @@ def main(**kwargs):
     )
 
     ### set data_loader
-    _,val_df,test_df=TrainUtils.split_graph_df(df=graph_df)
-    val_dataset=TemporalGraphDataset(df=val_df)
+    _,_,test_df=TrainUtils.split_graph_df(df=graph_df)
     test_dataset=TemporalGraphDataset(df=test_df)
-    val_loader=DataLoader(dataset=val_dataset,batch_size=batch_size,shuffle=False)
     test_loader=DataLoader(dataset=test_dataset,batch_size=batch_size,shuffle=False)
 
     ### load TR result
@@ -171,9 +169,9 @@ def main(**kwargs):
         purpose="test"
     )
 
-    ### set val_sample_list using TR sampling
+    ### set test_sample_list using TR sampling
     test_sample_list=TrainUtils.get_TR_sample_list(
-        data_loader=val_loader,
+        data_loader=test_loader,
         n_sample=n_sample,
         source=source,
         TR_result=test_TR_result,
@@ -183,7 +181,6 @@ def main(**kwargs):
     ### Evaluate model
     evaluate_result=ModelTrainer.evaluate_hop_range(
         model=model,
-        val_loader=val_loader,
         test_loader=test_loader,
         test_sample_list=test_sample_list,
         **model_config

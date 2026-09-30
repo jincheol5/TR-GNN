@@ -241,7 +241,6 @@ class ModelTrainer:
     @staticmethod
     def evaluate(
             model:nn.Module,
-            val_loader:DataLoader,
             test_loader:DataLoader,
             test_sample_list:list,
             **kwargs
@@ -258,25 +257,6 @@ class ModelTrainer:
         model.to(device)
         model.graph.to_device(device=device)
         model.eval()
-
-        """
-        update memory for validate eventstream
-        """
-        if kwargs["model_name"] in ("TGN"):
-            for event_src,event_dst,event_t,event_edge in tqdm(
-                    val_loader,
-                    desc=f"validate eventstream에 대한 memory update 수행..."
-                ):
-                event_src=event_src.to(device)
-                event_dst=event_dst.to(device)
-                event_t=event_t.to(device)
-                event_edge=event_edge.to(device)
-                model.update_model_memory(
-                    src=event_src,
-                    dst=event_dst,
-                    event_t=event_t,
-                    edge=event_edge
-                )
 
         """
         compute test acc
@@ -338,7 +318,6 @@ class ModelTrainer:
     @staticmethod
     def evaluate_hop_range(
             model:nn.Module,
-            val_loader:DataLoader,
             test_loader:DataLoader,
             test_sample_list:list,
             **kwargs
@@ -355,25 +334,6 @@ class ModelTrainer:
         model.to(device)
         model.graph.to_device(device=device)
         model.eval()
-
-        """
-        update memory for validate eventstream
-        """
-        if kwargs["model_name"] in ("TGN"):
-            for event_src,event_dst,event_t,event_edge in tqdm(
-                    val_loader,
-                    desc=f"validate eventstream에 대한 memory update 수행..."
-                ):
-                event_src=event_src.to(device)
-                event_dst=event_dst.to(device)
-                event_t=event_t.to(device)
-                event_edge=event_edge.to(device)
-                model.update_model_memory(
-                    src=event_src,
-                    dst=event_dst,
-                    event_t=event_t,
-                    edge=event_edge
-                )
 
         """
         compute test acc
