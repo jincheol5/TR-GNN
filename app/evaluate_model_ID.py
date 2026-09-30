@@ -189,11 +189,15 @@ def main(**kwargs):
     hop_range_1_acc=evaluate_result["hop_range_1_acc"]
     hop_range_2_acc=evaluate_result["hop_range_2_acc"]
     hop_range_3_acc=evaluate_result["hop_range_3_acc"]
+    n_hop_range_1_mean=evaluate_result["n_hop_range_1_mean"]
+    n_hop_range_2_mean=evaluate_result["n_hop_range_2_mean"]
+    n_hop_range_3_mean=evaluate_result["n_hop_range_3_mean"]
+
     print(f"Evaluate {file_name} result:")
     print(f"ACC: {acc}")
-    print(f"ACC (1 <= hop < 5): {hop_range_1_acc}")
-    print(f"ACC (5 <= hop < 10): {hop_range_2_acc}")
-    print(f"ACC (10 <= hop): {hop_range_3_acc}")
+    print(f"ACC (1 <= hop < 5) (Sampling AVG = {n_hop_range_1_mean}): {hop_range_1_acc}")
+    print(f"ACC (5 <= hop < 10) (Sampling AVG = {n_hop_range_2_mean}): {hop_range_2_acc}")
+    print(f"ACC (10 <= hop) (Sampling AVG = {n_hop_range_3_mean}): {hop_range_3_acc}")
 
 if __name__=="__main__":
     """

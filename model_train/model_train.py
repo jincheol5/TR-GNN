@@ -324,6 +324,7 @@ class ModelTrainer:
         ):
         """
         Memory-based GNN의 경우 evaluate_model 전에 val_loader에 대해 memory update 수행되어야 함.
+        n_hop_range_{1,2,3}_mean: 빈 배치를 포함한 배치당 각 hop 구간의 양성 샘플 수 평균.
         """
         if torch.cuda.is_available():
             device=torch.device("cuda")
@@ -342,12 +343,19 @@ class ModelTrainer:
         hop_range_1_acc_list=[]
         hop_range_2_acc_list=[]
         hop_range_3_acc_list=[]
+        hop_range_sample_totals=[0,0,0]
+        n_sample_batches=0
         with torch.no_grad():
             for batch_event,batch_sample in tqdm(
                     zip(test_loader,test_sample_list),
                     total=len(test_sample_list),
                     desc=f"Compute Test Acc..."
                 ):
+                # 빈 TR 배치도 샘플 수 평균의 분모에 포함한다.
+                n_sample_batches+=1
+                for idx in range(3):
+                    hop_range_sample_totals[idx]+=batch_sample[f"hop_range_{idx+1}_mask"].sum().item()
+
                 ### Update model memory for Eventstream
                 event_src,event_dst,event_t,event_edge=batch_event
                 if kwargs["model_name"] in ("TGN"):
@@ -409,10 +417,14 @@ class ModelTrainer:
                 hop_range_1_acc_list.append(hop_range_1_acc)
                 hop_range_2_acc_list.append(hop_range_2_acc)
                 hop_range_3_acc_list.append(hop_range_3_acc)
+        if not acc_list:
+            raise ValueError("평가에 사용할 TR 샘플이 없습니다.")
         return {
             "acc":sum(acc_list)/len(acc_list),
             "hop_range_1_acc":sum(hop_range_1_acc_list)/len(hop_range_1_acc_list),
             "hop_range_2_acc":sum(hop_range_2_acc_list)/len(hop_range_2_acc_list),
-            "hop_range_3_acc":sum(hop_range_3_acc_list)/len(hop_range_3_acc_list)
+            "hop_range_3_acc":sum(hop_range_3_acc_list)/len(hop_range_3_acc_list),
+            "n_hop_range_1_mean":hop_range_sample_totals[0]/n_sample_batches,
+            "n_hop_range_2_mean":hop_range_sample_totals[1]/n_sample_batches,
+            "n_hop_range_3_mean":hop_range_sample_totals[2]/n_sample_batches
         }
-        
