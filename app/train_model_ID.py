@@ -39,7 +39,7 @@ def main(**kwargs):
     epoch=100
     early_stop=True
     patience=10
-    batch_size=kwargs["batch_size"]
+    batch_size=200
     lr=kwargs["lr"]
     sampling=kwargs["sampling"]
     n_sample=1000
@@ -218,6 +218,7 @@ if __name__=="__main__":
         "seed":args.seed,
         "lr":args.lr,
         "sampling":args.sampling,
-        "dataset_name":args.dataset_name
+        "dataset_name":args.dataset_name,
+        "source":args.source
     }
     main(**app_config)
