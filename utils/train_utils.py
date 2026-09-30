@@ -319,8 +319,8 @@ class TrainUtils:
 
         ### 조건 적용
         candidate_mask=(
-            (mean_ratio>=0.4) &
-            (mean_ratio<=0.6) 
+            (mean_ratio>=0.45) &
+            (mean_ratio<=0.55) 
         )
 
         ### 실제 source node id
