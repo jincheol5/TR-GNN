@@ -1,6 +1,6 @@
 import argparse
 from torch.utils.data import DataLoader
-from utils import DataUtils,TrainUtils,TemporalGraphDataset
+from utils import DataUtils,TrainUtils,ModelUtils,TemporalGraphDataset
 from graph import TGN_Graph,DyGFormer_Graph
 from model import TGAT,TGN,DyGFormer
 from model_train import ModelTrainer
@@ -172,7 +172,7 @@ def main(**kwargs):
         sampling=sampling
     )
 
-    ### model train
+    ### train model
     model=ModelTrainer.train(
         model=model,
         train_loader=train_loader,
@@ -181,6 +181,18 @@ def main(**kwargs):
         TR_result=train_TR_result,
         **model_config
     )
+
+    ### save model
+    if kwargs["save_model"]:
+        if sampling=="independent":
+            file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}"
+        else: # dependent
+            file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}"
+        ModelUtils.save_ID_model_parameter(
+            model=model,
+            file_name=file_name,
+            dataset_name=dataset_name
+        )
 
 if __name__=="__main__":
     """
@@ -212,6 +224,7 @@ if __name__=="__main__":
         default="CollegeMsg"
     )
     parser.add_argument("--source",type=int,default=1)
+    parser.add_argument("--save_model",type=int,default=0)
     args=parser.parse_args()
     app_config={
         "model_name":args.model_name,
@@ -219,6 +232,7 @@ if __name__=="__main__":
         "lr":args.lr,
         "sampling":args.sampling,
         "dataset_name":args.dataset_name,
-        "source":args.source
+        "source":args.source,
+        "save_model":args.save_model
     }
     main(**app_config)
