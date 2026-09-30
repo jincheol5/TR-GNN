@@ -289,7 +289,7 @@ class TrainUtils:
         다음 조건을 모두 만족하는 source 후보를 반환.
 
         조건:
-            - seq 평균 reachability ratio: 40% <= mean <= 60%
+            - seq 평균 reachability ratio: 45% <= mean <= 55%
             - padding node(id=0)는 source/destination 후보에서 제외.
 
         Input:

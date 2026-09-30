@@ -304,6 +304,12 @@ class ModelTrainer:
 
                 ### TR Sample
                 src=batch_sample["src"]
+                # Sample이 빈 경우 넘어가기
+                if src.numel()==0:
+                    # TGN은 위에서 수행한 이벤트 메모리 업데이트를 유지
+                    if kwargs["model_name"] in ("TGN"):
+                        model.memory.memory_detach()
+                    continue
                 dst=batch_sample["dst"]
                 query_t=batch_sample["query_t"]
                 label=batch_sample["label"]
@@ -311,13 +317,6 @@ class ModelTrainer:
                 dst=dst.to(device)
                 query_t=query_t.to(device)
                 label=label.to(device)
-
-                ### Sample이 빈 경우 넘어가기
-                if src.numel()==0:
-                    # TGN은 위에서 수행한 이벤트 메모리 업데이트를 유지
-                    if kwargs["model_name"] in ("TGN","ReaCH-TGN"):
-                        model.memory.memory_detach()
-                    continue
 
                 pred_logit=model(
                     src=src,
@@ -405,6 +404,12 @@ class ModelTrainer:
 
                 ### TR Sample
                 src=batch_sample["src"]
+                # Sample이 빈 경우 넘어가기
+                if src.numel()==0:
+                    # TGN은 위에서 수행한 이벤트 메모리 업데이트를 유지
+                    if kwargs["model_name"] in ("TGN"):
+                        model.memory.memory_detach()
+                    continue
                 dst=batch_sample["dst"]
                 query_t=batch_sample["query_t"]
                 label=batch_sample["label"]
