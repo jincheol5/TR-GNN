@@ -55,7 +55,7 @@ class ModelTrainer:
             if kwargs["sampling"]=="dependent":
                 train_sample_list=TrainUtils.get_TR_sample_list(
                     data_loader=train_loader,
-                    n_pair=kwargs["n_pair"],
+                    n_sample=kwargs["n_sample"],
                     TR_result=TR_result,
                     source=kwargs["source"],
                     sampling=kwargs["sampling"]
@@ -63,6 +63,7 @@ class ModelTrainer:
             else: # independent
                 train_sample_list=TrainUtils.get_TR_sample_list(
                     data_loader=train_loader,
+                    n_sample=kwargs["n_sample"],
                     n_pair=kwargs["n_pair"],
                     TR_result=TR_result,
                     sampling=kwargs["sampling"]
@@ -88,7 +89,7 @@ class ModelTrainer:
                         edge=event_edge
                     )
 
-                    ### TR Sample
+                ### TR Sample
                 src=batch_sample["src"]
                 dst=batch_sample["dst"]
                 query_t=batch_sample["query_t"]

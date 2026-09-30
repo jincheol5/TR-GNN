@@ -39,7 +39,7 @@ def main(**kwargs):
     )
 
     ### find source candidates
-    source_candidates=TrainUtils.get_source_candidates(n_source=5,TR_label=TR_label)
+    source_candidates=TrainUtils.get_source_candidates(n_source=10,TR_label=TR_label)
     print(f"{dataset_name} source candidates: {source_candidates}")
 
 if __name__=="__main__":

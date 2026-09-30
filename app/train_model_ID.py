@@ -6,10 +6,6 @@ from model import TGAT,TGN,DyGFormer
 from model_train import ModelTrainer
 
 def main(**kwargs):
-    ### 
-    dataset_name=kwargs["dataset_name"]
-    source=kwargs["source"]
-
     ### seed
     seed=kwargs["seed"]
     TrainUtils.set_seed(seed=seed)
@@ -26,6 +22,8 @@ def main(**kwargs):
     n_layer=1
     n_neighbor=10
     n_head=4
+
+    ### TGN 하이퍼 파라미터
 
     ### DyGFormer 하이퍼 파라미터
     co_dim=32
@@ -50,6 +48,7 @@ def main(**kwargs):
 
     ### set model_config
     model_config={
+        # 모델 공동 하이퍼 파라미터
         "model_name":kwargs["model_name"],
         "time_dim":time_dim,
         "latent_dim":latent_dim,
@@ -58,8 +57,13 @@ def main(**kwargs):
         "n_neighbor":n_neighbor,
         "n_head":n_head,
 
+        # DyGFormer 하이퍼 파라미터
+        "co_dim":co_dim,
+        "common_dim":common_dim,
+        "max_history_len":max_history_len,
+        "patch_size":patch_size,
         
-
+        # 학습 관련 파라미터
         "seed":seed,
         "optimizer":optimizer,
         "epoch":epoch,
@@ -67,6 +71,8 @@ def main(**kwargs):
         "patience":patience,
         "batch_size":batch_size,
         "lr":lr,
+
+        # sampling 관련 파라미터
         "sampling":sampling,
         "n_sample":n_sample,
         "n_pair":n_pair,
@@ -90,6 +96,52 @@ def main(**kwargs):
             edge_dim=edge_dim
         )
     graph.set_random_seed(seed=seed)
+
+    ### set model
+    match model_name:
+        case "TGAT":
+            model=TGAT(
+                node_dim=node_dim,
+                edge_dim=edge_dim,
+                time_dim=time_dim,
+                latent_dim=latent_dim,
+                embed_dim=embed_dim,
+                graph=graph,
+                n_layer=n_layer,
+                n_neighbor=n_neighbor,
+                n_head=n_head
+            )
+        case "TGN":
+            model=TGN(
+                node_dim=node_dim,
+                edge_dim=edge_dim,
+                time_dim=time_dim,
+                latent_dim=latent_dim,
+                msg_dim=msg_dim,
+                mem_dim=mem_dim,
+                embed_dim=embed_dim,
+                graph=graph,
+                n_layer=n_layer,
+                n_neighbor=n_neighbor,
+                n_head=n_head,
+                msg_fn=f"mlp",
+                aggr_fn=f"last"
+            )
+        case "DyGFormer":
+            model=DyGFormer(
+                node_dim=node_dim,
+                edge_dim=edge_dim,
+                latent_dim=latent_dim,
+                time_dim=time_dim,
+                co_dim=co_dim,
+                common_dim=common_dim,
+                embed_dim=embed_dim,
+                graph=graph,
+                n_layer=n_layer,
+                n_head=n_head,
+                max_history_len=max_history_len,
+                patch_size=patch_size
+            )
 
     ### set data_loader
     train_df,val_df,_=TrainUtils.split_graph_df(df=graph_df)
@@ -120,14 +172,15 @@ def main(**kwargs):
         sampling=sampling
     )
 
-
     ### model train
-
-
-
-
-
-
+    model=ModelTrainer.train(
+        model=model,
+        train_loader=train_loader,
+        val_loader=val_loader,
+        val_sample_list=val_sample_list,
+        TR_result=train_TR_result,
+        **model_config
+    )
 
 if __name__=="__main__":
     """
@@ -161,6 +214,10 @@ if __name__=="__main__":
     parser.add_argument("--source",type=int,default=1)
     args=parser.parse_args()
     app_config={
+        "model_name":args.model_name,
+        "seed":args.seed,
+        "lr":args.lr,
+        "sampling":args.sampling,
         "dataset_name":args.dataset_name
     }
     main(**app_config)
