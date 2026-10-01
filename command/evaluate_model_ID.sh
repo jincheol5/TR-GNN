@@ -3,6 +3,5 @@ set -e
 
 python -m app.evaluate_model_ID --model_name TGAT --seed 1 --lr 0.0005 --sampling independent --dataset_name CollegeMsg --source 259
 python -m app.evaluate_model_ID --model_name TGN --seed 1 --lr 0.0005 --sampling independent --dataset_name CollegeMsg --source 259
-
 python -m app.evaluate_model_ID --model_name TGAT --seed 1 --lr 0.0005 --sampling dependent --dataset_name CollegeMsg --source 259
 python -m app.evaluate_model_ID --model_name TGN --seed 1 --lr 0.0005 --sampling dependent --dataset_name CollegeMsg --source 259
