@@ -69,6 +69,7 @@ class ReaCH_TGN(nn.Module):
             n_layer=n_layer,
             n_neighbor=n_neighbor,
             n_head=n_head,
+            use_last_state=False,
             use_memory=True,
             time_encoder=self.time_encoder
         )
@@ -148,7 +149,7 @@ class ReaCH_TGN(nn.Module):
         Temporal Augmentation 된 eventstream에 대해서 업데이트가 수행된 메모리 결과 반환
 
         Return: 
-            updated_mem_vec: [unique_N,mem_dim]
+            updated_mem_vec: [n_node+1,mem_dim]
         """
         mem_vec=self.memory.get_mem_vec()
         mem_t=self.memory.get_mem_t()
@@ -160,7 +161,8 @@ class ReaCH_TGN(nn.Module):
             mem_vec=mem_vec,
             mem_t=mem_t
         )
-        updated_mem_vec=updated_result["mem_vec"]
+        updated_mem_vec=mem_vec.clone()
+        updated_mem_vec[updated_result["node"]]=updated_result["mem_vec"]
         return updated_mem_vec
 
     def get_embedding_result(self,

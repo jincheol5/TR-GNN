@@ -69,6 +69,7 @@ class TGN(nn.Module):
             n_layer=n_layer,
             n_neighbor=n_neighbor,
             n_head=n_head,
+            use_last_state=False,
             use_memory=True,
             time_encoder=self.time_encoder
         )

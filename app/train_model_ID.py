@@ -2,8 +2,8 @@ import argparse
 from torch.utils.data import DataLoader
 from utils import DataUtils,TrainUtils,ModelUtils,TemporalGraphDataset
 from graph import TGN_Graph,DyGFormer_Graph
-from model import TGAT,TGN,DyGFormer
-from model_train import ModelTrainer
+from model import TGAT,TGN,DyGFormer,ReaCH_TGN
+from model_train import ModelTrainer,ReaCH_TGN_Trainer
 
 def main(**kwargs):
     ### seed
@@ -24,15 +24,14 @@ def main(**kwargs):
     n_head=4
 
     ### TGN 하이퍼 파라미터
+    msg_fn=f"mlp"
+    aggr_fn=f"last"
 
     ### DyGFormer 하이퍼 파라미터
     co_dim=32
     common_dim=32
     max_history_len=10
     patch_size=5
-
-    ### ReaCH-TGN 하이퍼 파라미터
-
 
     ### 학습 관련 파라미터
     optimizer=f"adam"
@@ -42,7 +41,7 @@ def main(**kwargs):
     batch_size=200
     lr=kwargs["lr"]
     sampling=kwargs["sampling"]
-    n_sample=1000
+    n_sample=200
     n_pair=10
     source=kwargs["source"]
 
@@ -124,8 +123,8 @@ def main(**kwargs):
                 n_layer=n_layer,
                 n_neighbor=n_neighbor,
                 n_head=n_head,
-                msg_fn=f"mlp",
-                aggr_fn=f"last"
+                msg_fn=msg_fn,
+                aggr_fn=aggr_fn
             )
         case "DyGFormer":
             model=DyGFormer(
@@ -141,6 +140,22 @@ def main(**kwargs):
                 n_head=n_head,
                 max_history_len=max_history_len,
                 patch_size=patch_size
+            )
+        case "ReaCH-TGN":
+            model=ReaCH_TGN(
+                node_dim=node_dim,
+                edge_dim=edge_dim,
+                time_dim=time_dim,
+                latent_dim=latent_dim,
+                msg_dim=msg_dim,
+                mem_dim=mem_dim,
+                embed_dim=embed_dim,
+                graph=graph,
+                n_layer=n_layer,
+                n_neighbor=n_neighbor,
+                n_head=n_head,
+                msg_fn=msg_fn,
+                aggr_fn=aggr_fn
             )
 
     ### set data_loader
@@ -173,14 +188,25 @@ def main(**kwargs):
     )
 
     ### train model
-    model=ModelTrainer.train(
-        model=model,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        val_sample_list=val_sample_list,
-        TR_result=train_TR_result,
-        **model_config
-    )
+    match model_name:
+        case "TGAT"|"TGN"|"DyGFormer":
+            model=ModelTrainer.train(
+                model=model,
+                train_loader=train_loader,
+                val_loader=val_loader,
+                val_sample_list=val_sample_list,
+                TR_result=train_TR_result,
+                **model_config
+            )
+        case "ReaCH-TGN":
+            model=ReaCH_TGN_Trainer.train(
+                model=model,
+                train_loader=train_loader,
+                val_loader=val_loader,
+                val_sample_list=val_sample_list,
+                TR_result=train_TR_result,
+                **model_config
+            )
 
     ### save model
     if kwargs["save_model"]:

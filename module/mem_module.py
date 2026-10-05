@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from typing_extensions import Literal
+from typing import Literal
 from graph import TGN_Graph
 from .time_encoder_module import TimeEncoder
 

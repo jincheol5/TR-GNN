@@ -222,8 +222,8 @@ class TrainUtils:
     @staticmethod
     def get_TR_sample_list(
             data_loader:DataLoader,
-            n_sample:int=1000,
-            n_pair:int=10,
+            n_sample:int=100,
+            n_pair:int=5,
             source:int|None=None,
             TR_result:dict[str,torch.Tensor]|None=None,
             sampling:Literal[
@@ -254,7 +254,6 @@ class TrainUtils:
             match sampling:
                 case "independent":
                     TR_sample=SamplingUtils.source_independent_TR_sampling(
-                        sources=sources,
                         n_sample=n_sample,
                         n_pair=n_pair,
                         query_time=query_time,
