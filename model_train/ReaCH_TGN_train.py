@@ -157,11 +157,6 @@ class ReaCH_TGN_Trainer:
                     event_t=query_t
                 ) # [B,1]
 
-                ### Loss
-                pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                criterion=nn.BCEWithLogitsLoss(reduction="none")
-                loss=criterion(pred_logit,label)
-
                 ### Hop-Based Penalty
                 # pos_pair에 대한 penalty 계산
                 pos_src=src[pos_mask]
@@ -181,10 +176,15 @@ class ReaCH_TGN_Trainer:
                     query_time=query_time
                 )
 
-                ### Positive pair에 hop/time weight 적용
-                pair_weight=torch.ones_like(loss)
+                ### Pair Weight
+                pair_weight=torch.ones_like(label)
                 pair_weight[pos_mask]=weight_hop*weight_time
-                total_loss=(loss*pair_weight).mean()+NT_Xent_loss
+
+                ### Weighted BCE Loss
+                pred_logit=pred_logit.squeeze(-1) # -> [B,]
+                criterion=nn.BCEWithLogitsLoss(weight=pair_weight)
+                loss=criterion(pred_logit,label)
+                total_loss=loss+NT_Xent_loss
 
                 ### backward
                 optimizer.zero_grad()
