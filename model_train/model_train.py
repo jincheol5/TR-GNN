@@ -91,12 +91,6 @@ class ModelTrainer:
 
                 ### TR Sample
                 src=batch_sample["src"]
-                # Sample이 빈 경우 넘어가기
-                if src.numel()==0:
-                    # TGN은 위에서 수행한 이벤트 메모리 업데이트를 유지
-                    if kwargs["model_name"] in ("TGN"):
-                        model.memory.memory_detach()
-                    continue
                 dst=batch_sample["dst"]
                 query_t=batch_sample["query_t"]
                 label=batch_sample["label"]
@@ -104,6 +98,9 @@ class ModelTrainer:
                 dst=dst.to(device)
                 query_t=query_t.to(device)
                 label=label.to(device)
+                if kwargs["sampling"]=="dependent":
+                    sample_weight=batch_sample["weight"]
+                    sample_weight=sample_weight.to(device)
 
                 pred_logit=model(
                     src=src,
@@ -113,7 +110,10 @@ class ModelTrainer:
 
                 ### Loss
                 pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                criterion=nn.BCEWithLogitsLoss()
+                if kwargs["sampling"]=="dependent":
+                    criterion=nn.BCEWithLogitsLoss(weight=sample_weight)
+                else: # independent
+                    criterion=nn.BCEWithLogitsLoss()
                 loss=criterion(pred_logit,label)
 
                 ### backward
@@ -200,12 +200,6 @@ class ModelTrainer:
 
                 ### TR Sample
                 src=batch_sample["src"]
-                # Sample이 빈 경우 넘어가기
-                if src.numel()==0:
-                    # TGN은 위에서 수행한 이벤트 메모리 업데이트를 유지
-                    if kwargs["model_name"] in ("TGN"):
-                        model.memory.memory_detach()
-                    continue
                 dst=batch_sample["dst"]
                 query_t=batch_sample["query_t"]
                 label=batch_sample["label"]
@@ -246,7 +240,6 @@ class ModelTrainer:
             **kwargs
         ):
         """
-        Memory-based GNN의 경우 evaluate_model 전에 val_loader에 대해 memory update 수행되어야 함.
         """
         if torch.cuda.is_available():
             device=torch.device("cuda")
@@ -284,12 +277,6 @@ class ModelTrainer:
 
                 ### TR Sample
                 src=batch_sample["src"]
-                # Sample이 빈 경우 넘어가기
-                if src.numel()==0:
-                    # TGN은 위에서 수행한 이벤트 메모리 업데이트를 유지
-                    if kwargs["model_name"] in ("TGN"):
-                        model.memory.memory_detach()
-                    continue
                 dst=batch_sample["dst"]
                 query_t=batch_sample["query_t"]
                 label=batch_sample["label"]
@@ -315,116 +302,3 @@ class ModelTrainer:
             "acc":sum(acc_list)/len(acc_list)
         }
 
-    @staticmethod
-    def evaluate_hop_range(
-            model:nn.Module,
-            test_loader:DataLoader,
-            test_sample_list:list,
-            **kwargs
-        ):
-        """
-        Memory-based GNN의 경우 evaluate_model 전에 val_loader에 대해 memory update 수행되어야 함.
-        n_hop_range_{1,2,3}_mean: 빈 배치를 포함한 배치당 각 hop 구간의 양성 샘플 수 평균.
-        """
-        if torch.cuda.is_available():
-            device=torch.device("cuda")
-        elif torch.backends.mps.is_available():
-            device=torch.device("mps")
-        else:
-            device=torch.device("cpu")
-        model.to(device)
-        model.graph.to_device(device=device)
-        model.eval()
-
-        """
-        compute test acc
-        """
-        acc_list=[]
-        hop_range_1_acc_list=[]
-        hop_range_2_acc_list=[]
-        hop_range_3_acc_list=[]
-        hop_range_sample_totals=[0,0,0]
-        n_sample_batches=0
-        with torch.no_grad():
-            for batch_event,batch_sample in tqdm(
-                    zip(test_loader,test_sample_list),
-                    total=len(test_sample_list),
-                    desc=f"Compute Test Acc..."
-                ):
-                # 빈 TR 배치도 샘플 수 평균의 분모에 포함한다.
-                n_sample_batches+=1
-                for idx in range(3):
-                    hop_range_sample_totals[idx]+=batch_sample[f"hop_range_{idx+1}_mask"].sum().item()
-
-                ### Update model memory for Eventstream
-                event_src,event_dst,event_t,event_edge=batch_event
-                if kwargs["model_name"] in ("TGN"):
-                    event_src=event_src.to(device)
-                    event_dst=event_dst.to(device)
-                    event_t=event_t.to(device)
-                    event_edge=event_edge.to(device)
-                    model.update_model_memory(
-                        src=event_src,
-                        dst=event_dst,
-                        event_t=event_t,
-                        edge=event_edge
-                    )
-
-                ### TR Sample
-                src=batch_sample["src"]
-                # Sample이 빈 경우 넘어가기
-                if src.numel()==0:
-                    # TGN은 위에서 수행한 이벤트 메모리 업데이트를 유지
-                    if kwargs["model_name"] in ("TGN"):
-                        model.memory.memory_detach()
-                    continue
-                dst=batch_sample["dst"]
-                query_t=batch_sample["query_t"]
-                label=batch_sample["label"]
-                hop_range_1_mask=batch_sample["hop_range_1_mask"]
-                hop_range_2_mask=batch_sample["hop_range_2_mask"]
-                hop_range_3_mask=batch_sample["hop_range_3_mask"]
-
-                src=src.to(device)
-                dst=dst.to(device)
-                query_t=query_t.to(device)
-                label=label.to(device)
-                hop_range_1_mask=hop_range_1_mask.to(device)
-                hop_range_2_mask=hop_range_2_mask.to(device)
-                hop_range_3_mask=hop_range_3_mask.to(device)
-
-                pred_logit=model(
-                    src=src,
-                    dst=dst,
-                    event_t=query_t
-                ) # [n_sample,1]
-
-                ### ACC
-                pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                acc_result=Metric.compute_hop_range_accuracy(
-                    pred_logit=pred_logit,
-                    label=label,
-                    hop_range_1_mask=hop_range_1_mask,
-                    hop_range_2_mask=hop_range_2_mask,
-                    hop_range_3_mask=hop_range_3_mask
-                )
-                acc=acc_result["acc"]
-                hop_range_1_acc=acc_result["hop_range_1_acc"]
-                hop_range_2_acc=acc_result["hop_range_2_acc"]
-                hop_range_3_acc=acc_result["hop_range_3_acc"]
-
-                acc_list.append(acc)
-                hop_range_1_acc_list.append(hop_range_1_acc)
-                hop_range_2_acc_list.append(hop_range_2_acc)
-                hop_range_3_acc_list.append(hop_range_3_acc)
-        if not acc_list:
-            raise ValueError("평가에 사용할 TR 샘플이 없습니다.")
-        return {
-            "acc":sum(acc_list)/len(acc_list),
-            "hop_range_1_acc":sum(hop_range_1_acc_list)/len(hop_range_1_acc_list),
-            "hop_range_2_acc":sum(hop_range_2_acc_list)/len(hop_range_2_acc_list),
-            "hop_range_3_acc":sum(hop_range_3_acc_list)/len(hop_range_3_acc_list),
-            "n_hop_range_1_mean":hop_range_sample_totals[0]/n_sample_batches,
-            "n_hop_range_2_mean":hop_range_sample_totals[1]/n_sample_batches,
-            "n_hop_range_3_mean":hop_range_sample_totals[2]/n_sample_batches
-        }

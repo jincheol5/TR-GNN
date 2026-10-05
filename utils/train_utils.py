@@ -222,15 +222,11 @@ class TrainUtils:
     @staticmethod
     def get_TR_sample_list(
             data_loader:DataLoader,
-            n_sample:int=100,
-            n_pair:int=5,
+            n_sample:int=200,
+            n_pair:int=10,
             source:int|None=None,
             TR_result:dict[str,torch.Tensor]|None=None,
-            sampling:Literal[
-                "independent",
-                "dependent",
-                "hop_range"
-            ]=f"dependent"
+            sampling:Literal["independent","dependent"]=f"dependent"
         )->list[dict[str,torch.Tensor]]:
         """
         Input:
@@ -243,13 +239,11 @@ class TrainUtils:
             TR_sample_list
         """
         TR_label=TR_result["label"]
-        TR_hop=TR_result["hop"]
         TR_sample_list=[]
-        for batch_idx,(src,dst,event_t,_) in tqdm(
+        for batch_idx,(_,dst,event_t,_) in tqdm(
                 enumerate(data_loader),
                 desc="Generating TR samples..."
             ):
-            sources=torch.unique(torch.cat([src,dst])).tolist()
             query_time=event_t.max().item()
             match sampling:
                 case "independent":
@@ -262,18 +256,9 @@ class TrainUtils:
                 case "dependent":
                     TR_sample=SamplingUtils.source_dependent_TR_sampling(
                         source=source,
-                        n_sample=n_sample,
+                        dst=dst,
                         query_time=query_time,
-                        TR_label=TR_label[batch_idx],
-                        updated_nodes=sources
-                    )
-                case "hop_range":
-                    TR_sample=SamplingUtils.hop_range_TR_sampling(
-                        source=source,
-                        n_sample=n_sample,
-                        query_time=query_time,
-                        TR_label=TR_label[batch_idx],
-                        TR_hop=TR_hop[batch_idx]
+                        TR_label=TR_label[batch_idx]
                     )
             TR_sample_list.append(TR_sample)
         return TR_sample_list
