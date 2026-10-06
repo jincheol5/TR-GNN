@@ -52,7 +52,7 @@ class ModelTrainer:
                 model.memory.init_memory_state()
 
             ### Epoch마다 train_sample_list 생성
-            if kwargs["sampling"]=="dependent":
+            if kwargs["sampling"]=="focused":
                 train_sample_list=TrainUtils.get_TR_sample_list(
                     data_loader=train_loader,
                     n_sample=kwargs["n_sample"],
@@ -60,7 +60,7 @@ class ModelTrainer:
                     source=kwargs["source"],
                     sampling=kwargs["sampling"]
                 )
-            else: # independent
+            else: # random
                 train_sample_list=TrainUtils.get_TR_sample_list(
                     data_loader=train_loader,
                     n_sample=kwargs["n_sample"],
@@ -98,7 +98,7 @@ class ModelTrainer:
                 dst=dst.to(device)
                 query_t=query_t.to(device)
                 label=label.to(device)
-                if kwargs["sampling"]=="dependent":
+                if kwargs["sampling"]=="focused":
                     sample_weight=batch_sample["weight"]
                     sample_weight=sample_weight.to(device)
 
@@ -110,9 +110,9 @@ class ModelTrainer:
 
                 ### Loss
                 pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                if kwargs["sampling"]=="dependent":
+                if kwargs["sampling"]=="focused":
                     criterion=nn.BCEWithLogitsLoss(weight=sample_weight)
-                else: # independent
+                else: # random
                     criterion=nn.BCEWithLogitsLoss()
                 loss=criterion(pred_logit,label)
 

@@ -226,7 +226,7 @@ class TrainUtils:
             n_pair:int=10,
             source:int|None=None,
             TR_result:dict[str,torch.Tensor]|None=None,
-            sampling:Literal["independent","dependent"]=f"dependent"
+            sampling:Literal["random","focused"]=f"random"
         )->list[dict[str,torch.Tensor]]:
         """
         Input:
@@ -246,15 +246,15 @@ class TrainUtils:
             ):
             query_time=event_t.max().item()
             match sampling:
-                case "independent":
-                    TR_sample=SamplingUtils.source_independent_TR_sampling(
+                case "random":
+                    TR_sample=SamplingUtils.source_random_TR_sampling(
                         n_sample=n_sample,
                         n_pair=n_pair,
                         query_time=query_time,
                         TR_label=TR_label[batch_idx]
                     )
-                case "dependent":
-                    TR_sample=SamplingUtils.source_dependent_TR_sampling(
+                case "focused":
+                    TR_sample=SamplingUtils.source_focused_TR_sampling(
                         source=source,
                         dst=dst,
                         query_time=query_time,

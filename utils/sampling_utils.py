@@ -2,7 +2,7 @@ import torch
 
 class SamplingUtils:
     @staticmethod
-    def source_independent_TR_sampling(
+    def source_random_TR_sampling(
             n_sample:int,
             n_pair:int,
             query_time:float,
@@ -58,7 +58,7 @@ class SamplingUtils:
         }
 
     @staticmethod
-    def source_dependent_TR_sampling(
+    def source_focused_TR_sampling(
             source:int,
             dst:torch.Tensor,
             query_time:float,
@@ -127,3 +127,18 @@ class SamplingUtils:
             "pos_mask":pos_mask,
             "weight":weight
         }
+
+    @staticmethod
+    def evaluate_hop_range_TR_sampling(
+            n_sample:int,
+            source:int,
+            query_time:float,
+            TR_label:torch.Tensor,
+            TR_hop:torch.Tensor
+        )->dict[str,torch.Tensor]:
+        """
+        hop range 1: 1<=hop<3
+        hop range 2: 3<=hop<5
+        hop range 3: 5<=hop
+        """
+

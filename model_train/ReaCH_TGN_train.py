@@ -54,7 +54,7 @@ class ReaCH_TGN_Trainer:
             model.memory.init_memory_state()
 
             ### Epoch마다 train_sample_list 생성
-            if kwargs["sampling"]=="dependent":
+            if kwargs["sampling"]=="focused":
                 train_sample_list=TrainUtils.get_TR_sample_list(
                     data_loader=train_loader,
                     n_sample=kwargs["n_sample"],
@@ -62,7 +62,7 @@ class ReaCH_TGN_Trainer:
                     source=kwargs["source"],
                     sampling=kwargs["sampling"]
                 )
-            else: # independent
+            else: # random
                 train_sample_list=TrainUtils.get_TR_sample_list(
                     data_loader=train_loader,
                     n_sample=kwargs["n_sample"],
@@ -150,7 +150,7 @@ class ReaCH_TGN_Trainer:
                 query_t=query_t.to(device)
                 label=label.to(device)
                 pos_mask=pos_mask.to(device)
-                if kwargs["sampling"]=="dependent":
+                if kwargs["sampling"]=="focused":
                     sample_weight=batch_sample["weight"]
                     sample_weight=sample_weight.to(device)
 
@@ -185,10 +185,10 @@ class ReaCH_TGN_Trainer:
 
                 ### Weighted BCE Loss
                 pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                if kwargs["sampling"]=="dependent":
+                if kwargs["sampling"]=="focused":
                     final_weight=sample_weight*pair_weight
                     criterion=nn.BCEWithLogitsLoss(weight=final_weight)
-                else:
+                else: # random
                     criterion=nn.BCEWithLogitsLoss(weight=pair_weight)
                 loss=criterion(pred_logit,label)
                 total_loss=loss+NT_Xent_loss

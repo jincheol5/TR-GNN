@@ -147,9 +147,9 @@ def main(**kwargs):
             )
 
     ### Load model
-    if sampling=="independent":
+    if sampling=="random":
         file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}"
-    else: # dependent
+    else: # focused
         file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}"
     model=ModelUtils.load_ID_model_parameter(
         model=model,
@@ -214,10 +214,10 @@ if __name__=="__main__":
     parser.add_argument("--sampling",
         type=str,
         choices=[
-            "dependent",
-            "independent"
+            "random",
+            "focused"
         ],
-        default="dependent"
+        default="random"
     )
     parser.add_argument("--dataset_name",
         type=str,
