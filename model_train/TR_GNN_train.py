@@ -128,7 +128,7 @@ class TR_GNN_Trainer:
                 pred_dst_logit=pred_dst_logit.squeeze(-1) # -> [B,]
 
                 ### update last_state for all event_dst
-                label_state=TR_result["label"][batch_idx,source,event_dst].to(device) # [B,]
+                label_state=TR_result["label"][batch_idx,source,event_dst.cpu()].to(device) # [B,]
                 model.last_state.update_last_state(
                     dst=event_dst,
                     pred_logit=pred_dst_logit,
