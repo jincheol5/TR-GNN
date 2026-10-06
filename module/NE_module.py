@@ -61,6 +61,7 @@ class Last_State(nn.Module):
             pred_state=torch.where(teacher_mask,label_state,pred_state)
 
         ### Update Last State
+        pred_state=pred_state.to(dtype=torch.float32)
         self.last_state[dst]=pred_state
 
     # def update_last_state(self,

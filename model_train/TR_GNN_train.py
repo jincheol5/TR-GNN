@@ -119,10 +119,11 @@ class TR_GNN_Trainer:
                 ### predict about batch eventstream
                 source=kwargs["source"]
                 src=torch.full_like(event_dst,fill_value=source,device=device)
+                batch_end_t=event_t.max().expand_as(event_t) # Predict every destination at the batch end time.
                 pred_dst_logit=model(
                     src=src,
                     dst=event_dst,
-                    event_t=query_t
+                    event_t=batch_end_t
                 ) # [B,1]
                 pred_dst_logit=pred_dst_logit.squeeze(-1) # -> [B,]
 
@@ -196,17 +197,16 @@ class TR_GNN_Trainer:
                 ):
                 ### Update model memory for Eventstream
                 event_src,event_dst,event_t,event_edge=batch_event
-                if kwargs["model_name"] in ("TGN"):
-                    event_src=event_src.to(device)
-                    event_dst=event_dst.to(device)
-                    event_t=event_t.to(device)
-                    event_edge=event_edge.to(device)
-                    model.update_model_memory(
-                        src=event_src,
-                        dst=event_dst,
-                        event_t=event_t,
-                        edge=event_edge
-                    )
+                event_src=event_src.to(device)
+                event_dst=event_dst.to(device)
+                event_t=event_t.to(device)
+                event_edge=event_edge.to(device)
+                model.update_model_memory(
+                    src=event_src,
+                    dst=event_dst,
+                    event_t=event_t,
+                    edge=event_edge
+                )
 
                 ### TR Sample
                 src=batch_sample["src"]
@@ -244,10 +244,11 @@ class TR_GNN_Trainer:
                 ### predict about batch eventstream
                 source=kwargs["source"]
                 src=torch.full_like(event_dst,fill_value=source,device=device)
+                batch_end_t=event_t.max().expand_as(event_t) # Predict every destination at the batch end time.
                 pred_dst_logit=model(
                     src=src,
                     dst=event_dst,
-                    event_t=query_t
+                    event_t=batch_end_t
                 ) # [B,1]
                 pred_dst_logit=pred_dst_logit.squeeze(-1) # -> [B,]
 
@@ -293,17 +294,16 @@ class TR_GNN_Trainer:
                 ):
                 ### Update model memory for Eventstream
                 event_src,event_dst,event_t,event_edge=batch_event
-                if kwargs["model_name"] in ("TGN"):
-                    event_src=event_src.to(device)
-                    event_dst=event_dst.to(device)
-                    event_t=event_t.to(device)
-                    event_edge=event_edge.to(device)
-                    model.update_model_memory(
-                        src=event_src,
-                        dst=event_dst,
-                        event_t=event_t,
-                        edge=event_edge
-                    )
+                event_src=event_src.to(device)
+                event_dst=event_dst.to(device)
+                event_t=event_t.to(device)
+                event_edge=event_edge.to(device)
+                model.update_model_memory(
+                    src=event_src,
+                    dst=event_dst,
+                    event_t=event_t,
+                    edge=event_edge
+                )
 
                 ### TR Sample
                 src=batch_sample["src"]
@@ -335,10 +335,11 @@ class TR_GNN_Trainer:
                 ### predict about batch eventstream
                 source=kwargs["source"]
                 src=torch.full_like(event_dst,fill_value=source,device=device)
+                batch_end_t=event_t.max().expand_as(event_t) # Predict every destination at the batch end time.
                 pred_dst_logit=model(
                     src=src,
                     dst=event_dst,
-                    event_t=query_t
+                    event_t=batch_end_t
                 ) # [B,1]
                 pred_dst_logit=pred_dst_logit.squeeze(-1) # -> [B,]
 
@@ -385,17 +386,16 @@ class TR_GNN_Trainer:
                 ):
                 ### Update model memory for Eventstream
                 event_src,event_dst,event_t,event_edge=batch_event
-                if kwargs["model_name"] in ("TGN"):
-                    event_src=event_src.to(device)
-                    event_dst=event_dst.to(device)
-                    event_t=event_t.to(device)
-                    event_edge=event_edge.to(device)
-                    model.update_model_memory(
-                        src=event_src,
-                        dst=event_dst,
-                        event_t=event_t,
-                        edge=event_edge
-                    )
+                event_src=event_src.to(device)
+                event_dst=event_dst.to(device)
+                event_t=event_t.to(device)
+                event_edge=event_edge.to(device)
+                model.update_model_memory(
+                    src=event_src,
+                    dst=event_dst,
+                    event_t=event_t,
+                    edge=event_edge
+                )
 
                 ### TR Sample
                 src=batch_sample["src"]
@@ -450,10 +450,11 @@ class TR_GNN_Trainer:
                 ### predict about batch eventstream
                 source=kwargs["source"]
                 src=torch.full_like(event_dst,fill_value=source,device=device)
+                batch_end_t=event_t.max().expand_as(event_t) # Predict every destination at the batch end time.
                 pred_dst_logit=model(
                     src=src,
                     dst=event_dst,
-                    event_t=query_t
+                    event_t=batch_end_t
                 ) # [B,1]
                 pred_dst_logit=pred_dst_logit.squeeze(-1) # -> [B,]
 

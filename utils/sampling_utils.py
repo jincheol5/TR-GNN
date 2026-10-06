@@ -172,7 +172,8 @@ class SamplingUtils:
             "src":src,
             "dst":dst,
             "label":label,
-            "query_t":query_t
+            "query_t":query_t,
+            "pos_mask":label.bool()
         }
 
     @staticmethod
@@ -238,7 +239,8 @@ class SamplingUtils:
             "src":src,
             "dst":dst,
             "label":label,
-            "query_t":query_t
+            "query_t":query_t,
+            "pos_mask":label.bool()
         }
 
     @staticmethod

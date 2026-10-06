@@ -2,8 +2,8 @@ import argparse
 from torch.utils.data import DataLoader
 from utils import DataUtils,TrainUtils,ModelUtils,TemporalGraphDataset
 from graph import TGN_Graph,DyGFormer_Graph
-from model import TGAT,TGN,DyGFormer
-from model_train import ModelTrainer,ReaCH_TGN_Trainer
+from model import TGAT,TGN,DyGFormer,ReaCH_TGN,TR_GNN
+from model_train import ModelTrainer,ReaCH_TGN_Trainer,TR_GNN_Trainer
 
 def main(**kwargs):
     ### seed
@@ -55,6 +55,9 @@ def main(**kwargs):
         "common_dim":common_dim,
         "max_history_len":max_history_len,
         "patch_size":patch_size,
+
+        # 평가 관련 파라미터
+        "source":source
     }
 
     ### set dataset
@@ -120,6 +123,38 @@ def main(**kwargs):
                 max_history_len=max_history_len,
                 patch_size=patch_size
             )
+        case "ReaCH-TGN":
+            model=ReaCH_TGN(
+                node_dim=node_dim,
+                edge_dim=edge_dim,
+                time_dim=time_dim,
+                latent_dim=latent_dim,
+                msg_dim=msg_dim,
+                mem_dim=mem_dim,
+                embed_dim=embed_dim,
+                graph=graph,
+                n_layer=n_layer,
+                n_neighbor=n_neighbor,
+                n_head=n_head,
+                msg_fn=msg_fn,
+                aggr_fn=aggr_fn
+            )
+        case "TR-GNN":
+            model=TR_GNN(
+                node_dim=node_dim,
+                edge_dim=edge_dim,
+                time_dim=time_dim,
+                latent_dim=latent_dim,
+                msg_dim=msg_dim,
+                mem_dim=mem_dim,
+                embed_dim=embed_dim,
+                graph=graph,
+                n_layer=n_layer,
+                n_neighbor=n_neighbor,
+                n_head=n_head,
+                msg_fn=msg_fn,
+                aggr_fn=aggr_fn
+            )
 
     ### Load model
     if sampling=="random":
@@ -144,67 +179,82 @@ def main(**kwargs):
         purpose="test"
     )
 
-    ### set base test_sample_list
-    base_test_sample_list=TrainUtils.get_TR_sample_list_for_evaluation(
-        data_loader=test_loader,
-        n_sample=200,
-        source=source,
-        TR_result=test_TR_result,
-        evaluate_type="base"
-    )
+    ### Evaluation
+    evaluate_type=kwargs["evaluate_type"]
+    if evaluate_type=="base":
+        ### set base test_sample_list
+        base_test_sample_list=TrainUtils.get_TR_sample_list_for_evaluation(
+            data_loader=test_loader,
+            n_sample=200,
+            source=source,
+            TR_result=test_TR_result,
+            evaluate_type=evaluate_type
+        )
+        match model_name:
+            case "TGAT"|"TGN"|"DyGFormer":
+                evaluate_result=ModelTrainer.evaluate(
+                    model=model,
+                    test_loader=test_loader,
+                    test_sample_list=base_test_sample_list,
+                    **model_config
+                )
+            case "ReaCH-TGN":
+                evaluate_result=ReaCH_TGN_Trainer.evaluate(
+                    model=model,
+                    test_loader=test_loader,
+                    test_sample_list=base_test_sample_list,
+                    **model_config
+                )
+            case "TR-GNN":
+                evaluate_result=TR_GNN_Trainer.evaluate(
+                    model=model,
+                    test_loader=test_loader,
+                    test_sample_list=base_test_sample_list,
+                    **model_config
+                )
 
-    ### set hop_range test_sample_list
-    hop_range_test_sample_list=TrainUtils.get_TR_sample_list_for_evaluation(
-        data_loader=test_loader,
-        n_sample=300,
-        source=source,
-        TR_result=test_TR_result,
-        evaluate_type="hop_range"
-    )
+        print(f"Evaluation 1 Result:")
+        print(f"dataset: {dataset_name}")
+        print(f"model: {file_name}")
+        print(f"ACC: {evaluate_result['acc']}",end="\n\n")
 
-    ### Evaluation 1
-    match model_name:
-        case "TGAT"|"TGN"|"DyGFormer":
-            evaluate_result=ModelTrainer.evaluate(
-                model=model,
-                test_loader=test_loader,
-                test_sample_list=base_test_sample_list,
-                **model_config
-            )
-        case "ReaCH-TGN":
-            evaluate_result=ReaCH_TGN_Trainer.evaluate(
-                model=model,
-                test_loader=test_loader,
-                test_sample_list=base_test_sample_list,
-                **model_config
-            )
-    print(f"Evaluation 1 Result:")
-    print(f"dataset: {dataset_name}")
-    print(f"model: {file_name}")
-    print(f"ACC: {evaluate_result['acc']}",end="\n\n")
-
-    ### Evaluation 2
-    match model_name:
-        case "TGAT"|"TGN"|"DyGFormer":
-            evaluate_result=ModelTrainer.evaluate_hop_range(
-                model=model,
-                test_loader=test_loader,
-                test_sample_list=hop_range_test_sample_list,
-                **model_config
-            )
-        case "ReaCH-TGN":
-            evaluate_result=ReaCH_TGN_Trainer.evaluate_hop_range(
-                model=model,
-                test_loader=test_loader,
-                test_sample_list=hop_range_test_sample_list,
-                **model_config
-            )
-    print(f"Evaluation 1 Result:")
-    print(f"dataset: {dataset_name}")
-    print(f"model: {file_name}")
-    print(f"Hop Range 1 (1 <= Hop < 3) ACC: {evaluate_result['range_1_acc']}")
-    print(f"Hop Range 2 (3 <= Hop < 5) ACC: {evaluate_result['range_2_acc']}")
-    print(f"Hop Range 3 (5 <= Hop) ACC: {evaluate_result['range_3_acc']}")
+    if evaluate_type=="hop_range":
+        ### set hop_range test_sample_list
+        hop_range_test_sample_list=TrainUtils.get_TR_sample_list_for_evaluation(
+            data_loader=test_loader,
+            n_sample=300,
+            source=source,
+            TR_result=test_TR_result,
+            evaluate_type="hop_range"
+        )
+        match model_name:
+            case "TGAT"|"TGN"|"DyGFormer":
+                evaluate_result=ModelTrainer.evaluate_hop_range(
+                    model=model,
+                    test_loader=test_loader,
+                    test_sample_list=hop_range_test_sample_list,
+                    **model_config
+                )
+            case "ReaCH-TGN":
+                evaluate_result=ReaCH_TGN_Trainer.evaluate_hop_range(
+                    model=model,
+                    test_loader=test_loader,
+                    test_sample_list=hop_range_test_sample_list,
+                    **model_config
+                )
+            case "TR-GNN":
+                evaluate_result=TR_GNN_Trainer.evaluate_hop_range(
+                    model=model,
+                    test_loader=test_loader,
+                    test_sample_list=hop_range_test_sample_list,
+                    **model_config
+                )
+        print(f"Evaluation 2 Result:")
+        print(f"dataset: {dataset_name}")
+        print(f"model: {file_name}")
+        print(f"Hop Range 1 (1 <= Hop < 3) ACC: {evaluate_result['range_1_acc']}")
+        print(f"Hop Range 2 (3 <= Hop < 5) ACC: {evaluate_result['range_2_acc']}")
+        print(f"Hop Range 3 (5 <= Hop) ACC: {evaluate_result['range_3_acc']}")
 
 if __name__=="__main__":
     """
@@ -213,12 +263,12 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--model_name",
         type=str,
-        choices=["TGAT","TGN","DyGFormer","ReaCH-TGN"],
+        choices=["TGAT","TGN","DyGFormer","ReaCH-TGN","TR-GNN"],
         default=f"TGAT"
     )
     parser.add_argument("--seed",type=int,choices=[1,2,3],default=1)
     parser.add_argument("--lr",type=float,choices=[0.0005,0.0001],default=0.0005)
-    parser.add_argument("--sampling",type=str, choices=["random","focused"],default="random")
+    parser.add_argument("--sampling",type=str,choices=["random","focused"],default="random")
     parser.add_argument("--dataset_name",
         type=str,
         choices=[
@@ -229,6 +279,7 @@ if __name__=="__main__":
         default="CollegeMsg"
     )
     parser.add_argument("--source",type=int,default=1)
+    parser.add_argument("--evaluate_type",choices=["base","hop_range"],default="base")
     args=parser.parse_args()
     app_config={
         "model_name":args.model_name,
@@ -236,6 +287,7 @@ if __name__=="__main__":
         "lr":args.lr,
         "sampling":args.sampling,
         "dataset_name":args.dataset_name,
-        "source":args.source
+        "source":args.source,
+        "evaluate_type":args.evaluate_type
     }
     main(**app_config)

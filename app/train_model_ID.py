@@ -2,8 +2,8 @@ import argparse
 from torch.utils.data import DataLoader
 from utils import DataUtils,TrainUtils,ModelUtils,TemporalGraphDataset
 from graph import TGN_Graph,DyGFormer_Graph
-from model import TGAT,TGN,DyGFormer,ReaCH_TGN
-from model_train import ModelTrainer,ReaCH_TGN_Trainer
+from model import TGAT,TGN,DyGFormer,ReaCH_TGN,TR_GNN
+from model_train import ModelTrainer,ReaCH_TGN_Trainer,TR_GNN_Trainer
 
 def main(**kwargs):
     ### seed
@@ -88,7 +88,7 @@ def main(**kwargs):
             node_dim=node_dim,
             edge_dim=edge_dim
         )
-    else: # TGAT, TGN, ReaCH-TGN
+    else: # TGAT, TGN, ReaCH-TGN, TR-GNN
         graph=TGN_Graph(
             graph_df=graph_df,
             node_dim=node_dim,
@@ -157,6 +157,22 @@ def main(**kwargs):
                 msg_fn=msg_fn,
                 aggr_fn=aggr_fn
             )
+        case "TR-GNN":
+            model=TR_GNN(
+                node_dim=node_dim,
+                edge_dim=edge_dim,
+                time_dim=time_dim,
+                latent_dim=latent_dim,
+                msg_dim=msg_dim,
+                mem_dim=mem_dim,
+                embed_dim=embed_dim,
+                graph=graph,
+                n_layer=n_layer,
+                n_neighbor=n_neighbor,
+                n_head=n_head,
+                msg_fn=msg_fn,
+                aggr_fn=aggr_fn
+            )
 
     ### set data_loader
     train_df,val_df,_=TrainUtils.split_graph_df(df=graph_df)
@@ -207,6 +223,15 @@ def main(**kwargs):
                 TR_result=train_TR_result,
                 **model_config
             )
+        case "TR-GNN":
+            model=TR_GNN_Trainer.train(
+                model=model,
+                train_loader=train_loader,
+                val_loader=val_loader,
+                val_sample_list=val_sample_list,
+                TR_result=train_TR_result,
+                **model_config
+            )
 
     ### save model
     if kwargs["save_model"]:
@@ -227,7 +252,7 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--model_name",
         type=str,
-        choices=["TGAT","TGN","DyGFormer","ReaCH-TGN"],
+        choices=["TGAT","TGN","DyGFormer","ReaCH-TGN","TR-GNN"],
         default=f"TGAT"
     )
     parser.add_argument("--seed",type=int,choices=[1,2,3],default=1)
