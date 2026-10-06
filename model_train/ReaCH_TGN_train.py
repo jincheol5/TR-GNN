@@ -384,7 +384,6 @@ class ReaCH_TGN_Trainer:
             **kwargs
         ):
         """
-        n_hop_range_{1,2,3}_mean: 빈 배치를 포함한 배치당 각 hop 구간의 양성 샘플 수 평균.
         """
         if torch.cuda.is_available():
             device=torch.device("cuda")
@@ -399,23 +398,15 @@ class ReaCH_TGN_Trainer:
         """
         compute test acc
         """
-        acc_list=[]
-        hop_range_1_acc_list=[]
-        hop_range_2_acc_list=[]
-        hop_range_3_acc_list=[]
-        hop_range_sample_totals=[0,0,0]
-        n_sample_batches=0
+        range_1_acc_list=[]
+        range_2_acc_list=[]
+        range_3_acc_list=[]
         with torch.no_grad():
             for batch_event,batch_sample in tqdm(
                     zip(test_loader,test_sample_list),
                     total=len(test_sample_list),
                     desc=f"Compute Test Acc..."
                 ):
-                # 빈 TR 배치도 샘플 수 평균의 분모에 포함한다.
-                n_sample_batches+=1
-                for idx in range(3):
-                    hop_range_sample_totals[idx]+=batch_sample[f"hop_range_{idx+1}_mask"].sum().item()
-
                 ### Update model memory for Eventstream
                 event_src,event_dst,event_t,event_edge=batch_event
                 if kwargs["model_name"] in ("TGN"):
@@ -435,48 +426,53 @@ class ReaCH_TGN_Trainer:
                 dst=batch_sample["dst"]
                 query_t=batch_sample["query_t"]
                 label=batch_sample["label"]
-                hop_range_1_mask=batch_sample["hop_range_1_mask"]
-                hop_range_2_mask=batch_sample["hop_range_2_mask"]
-                hop_range_3_mask=batch_sample["hop_range_3_mask"]
-
+                range_1_mask=batch_sample["range_1_mask"]
+                range_2_mask=batch_sample["range_2_mask"]
+                range_3_mask=batch_sample["range_3_mask"]
                 src=src.to(device)
                 dst=dst.to(device)
                 query_t=query_t.to(device)
                 label=label.to(device)
-                hop_range_1_mask=hop_range_1_mask.to(device)
-                hop_range_2_mask=hop_range_2_mask.to(device)
-                hop_range_3_mask=hop_range_3_mask.to(device)
+                range_1_mask=range_1_mask.to(device)
+                range_2_mask=range_2_mask.to(device)
+                range_3_mask=range_3_mask.to(device)
 
                 pred_logit=model(
                     src=src,
                     dst=dst,
                     event_t=query_t
                 ) # [n_sample,1]
+                pred_logit=pred_logit.squeeze(-1) # [n_sample,]
 
-                ### ACC
-                pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                acc_result=Metric.compute_hop_range_accuracy(
-                    pred_logit=pred_logit,
-                    label=label,
-                    hop_range_1_mask=hop_range_1_mask,
-                    hop_range_2_mask=hop_range_2_mask,
-                    hop_range_3_mask=hop_range_3_mask
-                )
-                acc=acc_result["acc"]
-                hop_range_1_acc=acc_result["hop_range_1_acc"]
-                hop_range_2_acc=acc_result["hop_range_2_acc"]
-                hop_range_3_acc=acc_result["hop_range_3_acc"]
+                ### Range 1 Accuracy
+                if range_1_mask.any():
+                    range_1_acc=Metric.compute_accuracy(
+                        pred_logit=pred_logit[range_1_mask],
+                        label=label[range_1_mask]
+                    )
+                    range_1_acc_list.append(range_1_acc)
 
-                acc_list.append(acc)
-                hop_range_1_acc_list.append(hop_range_1_acc)
-                hop_range_2_acc_list.append(hop_range_2_acc)
-                hop_range_3_acc_list.append(hop_range_3_acc)
+                ### Range 2 Accuracy
+                if range_2_mask.any():
+                    range_2_acc=Metric.compute_accuracy(
+                        pred_logit=pred_logit[range_2_mask],
+                        label=label[range_2_mask]
+                    )
+                    range_2_acc_list.append(range_2_acc)
+
+                ### Range 3 Accuracy
+                if range_3_mask.any():
+                    range_3_acc=Metric.compute_accuracy(
+                        pred_logit=pred_logit[range_3_mask],
+                        label=label[range_3_mask]
+                    )
+                    range_3_acc_list.append(range_3_acc)
+        ### Average Accuracy
+        range_1_acc=sum(range_1_acc_list)/len(range_1_acc_list) if len(range_1_acc_list)>0 else 0.0
+        range_2_acc=sum(range_2_acc_list)/len(range_2_acc_list) if len(range_2_acc_list)>0 else 0.0
+        range_3_acc=sum(range_3_acc_list)/len(range_3_acc_list) if len(range_3_acc_list)>0 else 0.0
         return {
-            "acc":sum(acc_list)/len(acc_list),
-            "hop_range_1_acc":sum(hop_range_1_acc_list)/len(hop_range_1_acc_list),
-            "hop_range_2_acc":sum(hop_range_2_acc_list)/len(hop_range_2_acc_list),
-            "hop_range_3_acc":sum(hop_range_3_acc_list)/len(hop_range_3_acc_list),
-            "n_hop_range_1_mean":hop_range_sample_totals[0]/n_sample_batches,
-            "n_hop_range_2_mean":hop_range_sample_totals[1]/n_sample_batches,
-            "n_hop_range_3_mean":hop_range_sample_totals[2]/n_sample_batches
+            "range_1_acc":range_1_acc,
+            "range_2_acc":range_2_acc,
+            "range_3_acc":range_3_acc
         }

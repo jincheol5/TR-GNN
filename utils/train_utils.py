@@ -264,6 +264,51 @@ class TrainUtils:
         return TR_sample_list
 
     @staticmethod
+    def get_TR_sample_list_for_evaluation(
+            data_loader:DataLoader,
+            n_sample:int,
+            source:int,
+            TR_result:dict[str,torch.Tensor],
+            evaluate_type:Literal["base","hop_range"]=f"base"
+        )->list[dict[str,torch.Tensor]]:
+        """
+        Input:
+            data_loader
+            n_sample
+            source
+            TR_result
+            evaluate_type
+        Return:
+            TR_sample_list
+        """
+        TR_label=TR_result["label"]
+        TR_hop=TR_result["hop"]
+        TR_sample_list=[]
+        for batch_idx,(_,_,event_t,_) in tqdm(
+                enumerate(data_loader),
+                desc="Generating TR samples..."
+            ):
+            query_time=event_t.max().item()
+            match evaluate_type:
+                case "base":
+                    TR_sample=SamplingUtils.TR_sampling_for_evaluate(
+                        n_sample=n_sample,
+                        source=source,
+                        query_time=query_time,
+                        TR_label=TR_label[batch_idx]
+                    )
+                case "hop_range":
+                    TR_sample=SamplingUtils.TR_sampling_for_evaluate_hop_range(
+                        n_sample=n_sample,
+                        source=source,
+                        query_time=query_time,
+                        TR_label=TR_label[batch_idx],
+                        TR_hop=TR_hop[batch_idx]
+                    )
+            TR_sample_list.append(TR_sample)
+        return TR_sample_list
+
+    @staticmethod
     def get_source_candidates(
             n_source:int,
             TR_label:torch.Tensor
