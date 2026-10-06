@@ -58,7 +58,7 @@ class SamplingUtils:
         }
 
     @staticmethod
-    def source_focused_TR_sampling(
+    def source_focused_TR_sampling_old(
             source:int,
             dst:torch.Tensor,
             query_time:float,
@@ -126,6 +126,53 @@ class SamplingUtils:
             "query_t":query_t,
             "pos_mask":pos_mask,
             "weight":weight
+        }
+
+    @staticmethod
+    def source_focused_TR_sampling(
+            n_sample:int,
+            source:int,
+            query_time:float,
+            TR_label:torch.Tensor,
+        )->dict[str,torch.Tensor]:
+        ### positive/negative 목표 sample 개수
+        n_pos=n_sample//2
+        n_neg=n_sample-n_pos
+
+        ### dst 후보
+        # padding node(id=0), source 자기 자신 제외
+        dst_candidates=torch.arange(1,TR_label.shape[1])
+        dst_candidates=dst_candidates[dst_candidates!=source]
+
+        ### positive/negative 후보
+        source_label=TR_label[source,dst_candidates]
+        pos_candidates=dst_candidates[source_label]
+        neg_candidates=dst_candidates[~source_label]
+
+        ### 실제 sample 개수
+        n_pos=min(n_pos,len(pos_candidates))
+        n_neg=min(n_neg,len(neg_candidates))
+
+        ### 중복 없이 random sampling
+        pos_dst=pos_candidates[torch.randperm(len(pos_candidates))[:n_pos]]
+        neg_dst=neg_candidates[torch.randperm(len(neg_candidates))[:n_neg]]
+
+        ### 실제 총 sample 개수
+        n_sample=n_pos+n_neg
+
+        ### positive -> negative 순서
+        src=torch.full((n_sample,),source,dtype=torch.long)
+        dst=torch.cat([ pos_dst,neg_dst])
+        label=torch.cat([
+            torch.ones(n_pos,dtype=torch.float32),
+            torch.zeros(n_neg,dtype=torch.float32)
+        ])
+        query_t=torch.full((n_sample,),query_time,dtype=torch.float32)
+        return {
+            "src":src,
+            "dst":dst,
+            "label":label,
+            "query_t":query_t
         }
 
     @staticmethod

@@ -35,9 +35,9 @@ class Last_State(nn.Module):
             return self.last_state[node]
 
     def update_last_state(self,
-            node:torch.Tensor,
-            pred_state:torch.Tensor,
-            label_state:torch.Tensor,
+            dst:torch.Tensor,
+            pred_logit:torch.Tensor,
+            label_state:torch.Tensor|None=None,
             purpose:Literal["train","test"]=f"test",
             p:float=0.5
         ):
@@ -46,11 +46,40 @@ class Last_State(nn.Module):
         purpose = test인 경우 그대로 업데이트.
 
         Input:
-            node: [N,]
-            pred_state: [N,]
-            label_state: [N,]
+            dst: [B,]
+            pred_logit:  [B,]
+            label_state: [B,]
+            purpose: "train" or "test"
+            p: Teacher Forcing 적용 확률
         """
+        ### Prediction State
+        pred_state=(torch.sigmoid(pred_logit)>=0.5)
+
+        ### Teacher Forcing
         if purpose=="train":
             teacher_mask=torch.rand(pred_state.shape,device=pred_state.device)<p
             pred_state=torch.where(teacher_mask,label_state,pred_state)
-        self.last_state[node]=pred_state
+
+        ### Update Last State
+        self.last_state[dst]=pred_state
+
+    # def update_last_state(self,
+    #         node:torch.Tensor,
+    #         pred_state:torch.Tensor,
+    #         label_state:torch.Tensor,
+    #         purpose:Literal["train","test"]=f"test",
+    #         p:float=0.5
+    #     ):
+    #     """
+    #     purpose = train인 경우 p 비율로 Teacher Forcing 적용.
+    #     purpose = test인 경우 그대로 업데이트.
+
+    #     Input:
+    #         node: [N,]
+    #         pred_state: [N,]
+    #         label_state: [N,]
+    #     """
+    #     if purpose=="train":
+    #         teacher_mask=torch.rand(pred_state.shape,device=pred_state.device)<p
+    #         pred_state=torch.where(teacher_mask,label_state,pred_state)
+    #     self.last_state[node]=pred_state
