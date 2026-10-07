@@ -92,6 +92,9 @@ class TR_GNN_Trainer:
                 query_t=query_t.to(device)
                 label=label.to(device)
 
+                sample_weight=batch_sample["weight"]
+                sample_weight=sample_weight.to(device)
+
                 ### predict of sample
                 pred_logit=model(
                     src=src,
@@ -100,9 +103,17 @@ class TR_GNN_Trainer:
                 ) # [B,1]
 
                 ### Loss
+                # pred_logit=pred_logit.squeeze(-1) # -> [B,]
+                # criterion=nn.BCEWithLogitsLoss()
+                # loss=criterion(pred_logit,label)
                 pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                criterion=nn.BCEWithLogitsLoss()
+                if kwargs["sampling"]=="focused":
+                    criterion=nn.BCEWithLogitsLoss(weight=sample_weight)
+                else: # random
+                    criterion=nn.BCEWithLogitsLoss()
+                # criterion=nn.BCEWithLogitsLoss()
                 loss=criterion(pred_logit,label)
+
 
                 ### backward
                 optimizer.zero_grad()

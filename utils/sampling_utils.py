@@ -58,7 +58,7 @@ class SamplingUtils:
         }
 
     @staticmethod
-    def source_focused_TR_sampling_old(
+    def source_focused_TR_sampling(
             source:int,
             dst:torch.Tensor,
             query_time:float,
@@ -128,120 +128,120 @@ class SamplingUtils:
             "weight":weight
         }
 
-    @staticmethod
-    def source_focused_TR_sampling(
-            n_sample:int,
-            source:int,
-            query_time:float,
-            TR_label:torch.Tensor,
-        )->dict[str,torch.Tensor]:
-        ### positive/negative 목표 sample 개수
-        n_pos=n_sample//2
-        n_neg=n_sample-n_pos
+    # @staticmethod
+    # def source_focused_TR_sampling(
+    #         n_sample:int,
+    #         source:int,
+    #         query_time:float,
+    #         TR_label:torch.Tensor,
+    #     )->dict[str,torch.Tensor]:
+    #     ### positive/negative 목표 sample 개수
+    #     n_pos=n_sample//2
+    #     n_neg=n_sample-n_pos
 
-        ### dst 후보
-        # padding node(id=0), source 자기 자신 제외
-        dst_candidates=torch.arange(1,TR_label.shape[1])
-        dst_candidates=dst_candidates[dst_candidates!=source]
+    #     ### dst 후보
+    #     # padding node(id=0), source 자기 자신 제외
+    #     dst_candidates=torch.arange(1,TR_label.shape[1])
+    #     dst_candidates=dst_candidates[dst_candidates!=source]
 
-        ### positive/negative 후보
-        source_label=TR_label[source,dst_candidates]
-        pos_candidates=dst_candidates[source_label]
-        neg_candidates=dst_candidates[~source_label]
+    #     ### positive/negative 후보
+    #     source_label=TR_label[source,dst_candidates]
+    #     pos_candidates=dst_candidates[source_label]
+    #     neg_candidates=dst_candidates[~source_label]
 
-        ### 실제 sample 개수
-        n_pos=min(n_pos,len(pos_candidates))
-        n_neg=min(n_neg,len(neg_candidates))
+    #     ### 실제 sample 개수
+    #     n_pos=min(n_pos,len(pos_candidates))
+    #     n_neg=min(n_neg,len(neg_candidates))
 
-        ### 중복 없이 random sampling
-        pos_dst=pos_candidates[torch.randperm(len(pos_candidates))[:n_pos]]
-        neg_dst=neg_candidates[torch.randperm(len(neg_candidates))[:n_neg]]
+    #     ### 중복 없이 random sampling
+    #     pos_dst=pos_candidates[torch.randperm(len(pos_candidates))[:n_pos]]
+    #     neg_dst=neg_candidates[torch.randperm(len(neg_candidates))[:n_neg]]
 
-        ### 실제 총 sample 개수
-        n_sample=n_pos+n_neg
+    #     ### 실제 총 sample 개수
+    #     n_sample=n_pos+n_neg
 
-        ### positive -> negative 순서
-        src=torch.full((n_sample,),source,dtype=torch.long)
-        dst=torch.cat([ pos_dst,neg_dst])
-        label=torch.cat([
-            torch.ones(n_pos,dtype=torch.float32),
-            torch.zeros(n_neg,dtype=torch.float32)
-        ])
-        query_t=torch.full((n_sample,),query_time,dtype=torch.float32)
-        return {
-            "src":src,
-            "dst":dst,
-            "label":label,
-            "query_t":query_t,
-            "pos_mask":label.bool()
-        }
+    #     ### positive -> negative 순서
+    #     src=torch.full((n_sample,),source,dtype=torch.long)
+    #     dst=torch.cat([ pos_dst,neg_dst])
+    #     label=torch.cat([
+    #         torch.ones(n_pos,dtype=torch.float32),
+    #         torch.zeros(n_neg,dtype=torch.float32)
+    #     ])
+    #     query_t=torch.full((n_sample,),query_time,dtype=torch.float32)
+    #     return {
+    #         "src":src,
+    #         "dst":dst,
+    #         "label":label,
+    #         "query_t":query_t,
+    #         "pos_mask":label.bool()
+    #     }
 
-    @staticmethod
-    def TR_sampling_for_evaluate(
-            n_sample:int,
-            source:int,
-            query_time:float,
-            TR_label:torch.Tensor,
-        ):
-        """
-        평가용 TR Sampling.
+    # @staticmethod
+    # def TR_sampling_for_evaluate(
+    #         n_sample:int,
+    #         source:int,
+    #         query_time:float,
+    #         TR_label:torch.Tensor,
+    #     ):
+    #     """
+    #     평가용 TR Sampling.
 
-        총 n_sample개의 positive pair + negative pair (1:1비율)를 생성한다.
-        source를 기준으로 dst들을 랜덤하게 샘플링한다.
-        padding node(id=0), source 자기 자신을 dst 후보에서 제외하며, 동일한 dst는 중복 샘플링하지 않는다.
+    #     총 n_sample개의 positive pair + negative pair (1:1비율)를 생성한다.
+    #     source를 기준으로 dst들을 랜덤하게 샘플링한다.
+    #     padding node(id=0), source 자기 자신을 dst 후보에서 제외하며, 동일한 dst는 중복 샘플링하지 않는다.
         
-        Input:
-            n_sample
-            source
-            query_time
-            TR_label: [N+1,N+1]
-        Return:
-            tensor dict:
-                src: [n_sample,]
-                dst: [n_sample,]
-                label: [n_sample,]
-                query_t: [n_sample,]
-        """
-        ### positive/negative 목표 sample 개수
-        n_pos=n_sample//2
-        n_neg=n_sample-n_pos
+    #     Input:
+    #         n_sample
+    #         source
+    #         query_time
+    #         TR_label: [N+1,N+1]
+    #     Return:
+    #         tensor dict:
+    #             src: [n_sample,]
+    #             dst: [n_sample,]
+    #             label: [n_sample,]
+    #             query_t: [n_sample,]
+    #     """
+    #     ### positive/negative 목표 sample 개수
+    #     n_pos=n_sample//2
+    #     n_neg=n_sample-n_pos
 
-        ### dst 후보
-        # padding node(id=0), source 자기 자신 제외
-        dst_candidates=torch.arange(1,TR_label.shape[1])
-        dst_candidates=dst_candidates[dst_candidates!=source]
+    #     ### dst 후보
+    #     # padding node(id=0), source 자기 자신 제외
+    #     dst_candidates=torch.arange(1,TR_label.shape[1])
+    #     dst_candidates=dst_candidates[dst_candidates!=source]
 
-        ### positive/negative 후보
-        source_label=TR_label[source,dst_candidates]
-        pos_candidates=dst_candidates[source_label]
-        neg_candidates=dst_candidates[~source_label]
+    #     ### positive/negative 후보
+    #     source_label=TR_label[source,dst_candidates]
+    #     pos_candidates=dst_candidates[source_label]
+    #     neg_candidates=dst_candidates[~source_label]
 
-        ### 실제 sample 개수
-        n_pos=min(n_pos,len(pos_candidates))
-        n_neg=min(n_neg,len(neg_candidates))
+    #     ### 실제 sample 개수
+    #     n_pos=min(n_pos,len(pos_candidates))
+    #     n_neg=min(n_neg,len(neg_candidates))
 
-        ### 중복 없이 random sampling
-        pos_dst=pos_candidates[torch.randperm(len(pos_candidates))[:n_pos]]
-        neg_dst=neg_candidates[torch.randperm(len(neg_candidates))[:n_neg]]
+    #     ### 중복 없이 random sampling
+    #     pos_dst=pos_candidates[torch.randperm(len(pos_candidates))[:n_pos]]
+    #     neg_dst=neg_candidates[torch.randperm(len(neg_candidates))[:n_neg]]
 
-        ### 실제 총 sample 개수
-        n_sample=n_pos+n_neg
+    #     ### 실제 총 sample 개수
+    #     n_sample=n_pos+n_neg
 
-        ### positive -> negative 순서
-        src=torch.full((n_sample,),source,dtype=torch.long)
-        dst=torch.cat([ pos_dst,neg_dst])
-        label=torch.cat([
-            torch.ones(n_pos,dtype=torch.float32),
-            torch.zeros(n_neg,dtype=torch.float32)
-        ])
-        query_t=torch.full((n_sample,),query_time,dtype=torch.float32)
-        return {
-            "src":src,
-            "dst":dst,
-            "label":label,
-            "query_t":query_t,
-            "pos_mask":label.bool()
-        }
+    #     ### positive -> negative 순서
+    #     src=torch.full((n_sample,),source,dtype=torch.long)
+    #     dst=torch.cat([ pos_dst,neg_dst])
+    #     label=torch.cat([
+    #         torch.ones(n_pos,dtype=torch.float32),
+    #         torch.zeros(n_neg,dtype=torch.float32)
+    #     ])
+    #     query_t=torch.full((n_sample,),query_time,dtype=torch.float32)
+    #     return {
+    #         "src":src,
+    #         "dst":dst,
+    #         "label":label,
+    #         "query_t":query_t,
+    #         "pos_mask":label.bool()
+    #     }
 
     @staticmethod
     def TR_sampling_for_evaluate_hop_range(

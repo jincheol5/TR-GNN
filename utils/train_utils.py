@@ -290,16 +290,22 @@ class TrainUtils:
         TR_label=TR_result["label"]
         TR_hop=TR_result["hop"]
         TR_sample_list=[]
-        for batch_idx,(_,_,event_t,_) in tqdm(
+        for batch_idx,(_,dst,event_t,_) in tqdm(
                 enumerate(data_loader),
                 desc="Generating TR samples..."
             ):
             query_time=event_t.max().item()
             match evaluate_type:
                 case "base":
-                    TR_sample=SamplingUtils.TR_sampling_for_evaluate(
-                        n_sample=n_sample,
+                    # TR_sample=SamplingUtils.TR_sampling_for_evaluate(
+                    #     n_sample=n_sample,
+                    #     source=source,
+                    #     query_time=query_time,
+                    #     TR_label=TR_label[batch_idx]
+                    # )
+                    TR_sample=SamplingUtils.source_focused_TR_sampling(
                         source=source,
+                        dst=dst,
                         query_time=query_time,
                         TR_label=TR_label[batch_idx]
                     )

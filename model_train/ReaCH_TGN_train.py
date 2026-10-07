@@ -150,9 +150,9 @@ class ReaCH_TGN_Trainer:
                 query_t=query_t.to(device)
                 label=label.to(device)
                 pos_mask=pos_mask.to(device)
-                # if kwargs["sampling"]=="focused":
-                #     sample_weight=batch_sample["weight"]
-                #     sample_weight=sample_weight.to(device)
+                if kwargs["sampling"]=="focused":
+                    sample_weight=batch_sample["weight"]
+                    sample_weight=sample_weight.to(device)
 
                 pred_logit=model(
                     src=src,
@@ -185,12 +185,12 @@ class ReaCH_TGN_Trainer:
 
                 ### Weighted BCE Loss
                 pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                # if kwargs["sampling"]=="focused":
-                #     final_weight=sample_weight*pair_weight
-                #     criterion=nn.BCEWithLogitsLoss(weight=final_weight)
-                # else: # random
-                #     criterion=nn.BCEWithLogitsLoss(weight=pair_weight)
-                criterion=nn.BCEWithLogitsLoss(weight=pair_weight)
+                if kwargs["sampling"]=="focused":
+                    final_weight=sample_weight*pair_weight
+                    criterion=nn.BCEWithLogitsLoss(weight=final_weight)
+                else: # random
+                    criterion=nn.BCEWithLogitsLoss(weight=pair_weight)
+                # criterion=nn.BCEWithLogitsLoss(weight=pair_weight)
                 loss=criterion(pred_logit,label)
                 total_loss=loss+NT_Xent_loss
 
