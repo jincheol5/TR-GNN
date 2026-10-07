@@ -254,15 +254,9 @@ class TrainUtils:
                         TR_label=TR_label[batch_idx]
                     )
                 case "focused":
-                    # TR_sample=SamplingUtils.source_focused_TR_sampling(
-                    #     source=source,
-                    #     dst=dst,
-                    #     query_time=query_time,
-                    #     TR_label=TR_label[batch_idx]
-                    # )
                     TR_sample=SamplingUtils.source_focused_TR_sampling(
-                        n_sample=n_sample,
                         source=source,
+                        dst=dst,
                         query_time=query_time,
                         TR_label=TR_label[batch_idx]
                     )
