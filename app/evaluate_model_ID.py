@@ -185,7 +185,7 @@ def main(**kwargs):
         ### set base test_sample_list
         base_test_sample_list=TrainUtils.get_TR_sample_list_for_evaluation(
             data_loader=test_loader,
-            n_sample=200,
+            n_sample=1000,
             source=source,
             TR_result=test_TR_result,
             evaluate_type=evaluate_type
