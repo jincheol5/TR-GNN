@@ -291,18 +291,19 @@ class TrainUtils:
             query_time=event_t.max().item()
             match evaluate_type:
                 case "base":
-                    # TR_sample=SamplingUtils.TR_sampling_for_evaluate(
-                    #     n_sample=n_sample,
-                    #     source=source,
-                    #     query_time=query_time,
-                    #     TR_label=TR_label[batch_idx]
-                    # )
-                    TR_sample=SamplingUtils.source_focused_TR_sampling(
+                    TR_sample=SamplingUtils.TR_sampling_for_evaluate(
+                        n_sample=n_sample,
                         source=source,
                         dst=dst,
                         query_time=query_time,
                         TR_label=TR_label[batch_idx]
                     )
+                    # TR_sample=SamplingUtils.source_focused_TR_sampling(
+                    #     source=source,
+                    #     dst=dst,
+                    #     query_time=query_time,
+                    #     TR_label=TR_label[batch_idx]
+                    # )
                 case "hop_range":
                     TR_sample=SamplingUtils.TR_sampling_for_evaluate_hop_range(
                         n_sample=n_sample,

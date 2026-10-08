@@ -180,6 +180,7 @@ class SamplingUtils:
     def TR_sampling_for_evaluate(
             n_sample:int,
             source:int,
+            dst:torch.Tensor,
             query_time:float,
             TR_label:torch.Tensor,
         ):
@@ -187,12 +188,14 @@ class SamplingUtils:
         평가용 TR Sampling.
 
         총 n_sample개의 positive pair + negative pair (1:1비율)를 생성한다.
-        source를 기준으로 dst들을 랜덤하게 샘플링한다.
+        각 class에서 입력 dst를 우선 샘플링하고, 부족한 개수는 나머지 후보에서 채운다.
+        우선 후보가 목표 개수보다 많으면 해당 후보 내에서 랜덤하게 선택한다.
         padding node(id=0), source 자기 자신을 dst 후보에서 제외하며, 동일한 dst는 중복 샘플링하지 않는다.
         
         Input:
             n_sample
             source
+            dst: [B,] 우선 샘플링할 node ids
             query_time
             TR_label: [N+1,N+1]
         Return:
@@ -208,7 +211,7 @@ class SamplingUtils:
 
         ### dst 후보
         # padding node(id=0), source 자기 자신 제외
-        dst_candidates=torch.arange(1,TR_label.shape[1])
+        dst_candidates=torch.arange(1,TR_label.shape[1],device=TR_label.device)
         dst_candidates=dst_candidates[dst_candidates!=source]
 
         ### positive/negative 후보
@@ -220,21 +223,32 @@ class SamplingUtils:
         n_pos=min(n_pos,len(pos_candidates))
         n_neg=min(n_neg,len(neg_candidates))
 
-        ### 중복 없이 random sampling
-        pos_dst=pos_candidates[torch.randperm(len(pos_candidates))[:n_pos]]
-        neg_dst=neg_candidates[torch.randperm(len(neg_candidates))[:n_neg]]
+        ### 입력 dst를 우선 선택하고 나머지 후보로 보충
+        priority_dst=torch.unique(dst.to(device=TR_label.device,dtype=torch.long))
+
+        def sample_candidates(candidates,count):
+            priority_mask=torch.isin(candidates,priority_dst)
+            priority=candidates[priority_mask]
+            remaining=candidates[~priority_mask]
+            selected=priority[torch.randperm(len(priority),device=priority.device)[:count]]
+            n_remaining=count-len(selected)
+            extra=remaining[torch.randperm(len(remaining),device=remaining.device)[:n_remaining]]
+            return torch.cat([selected,extra])
+
+        pos_dst=sample_candidates(pos_candidates,n_pos)
+        neg_dst=sample_candidates(neg_candidates,n_neg)
 
         ### 실제 총 sample 개수
         n_sample=n_pos+n_neg
 
         ### positive -> negative 순서
-        src=torch.full((n_sample,),source,dtype=torch.long)
+        src=torch.full((n_sample,),source,dtype=torch.long,device=TR_label.device)
         dst=torch.cat([ pos_dst,neg_dst])
         label=torch.cat([
-            torch.ones(n_pos,dtype=torch.float32),
-            torch.zeros(n_neg,dtype=torch.float32)
+            torch.ones(n_pos,dtype=torch.float32,device=TR_label.device),
+            torch.zeros(n_neg,dtype=torch.float32,device=TR_label.device)
         ])
-        query_t=torch.full((n_sample,),query_time,dtype=torch.float32)
+        query_t=torch.full((n_sample,),query_time,dtype=torch.float32,device=TR_label.device)
         return {
             "src":src,
             "dst":dst,
