@@ -255,7 +255,8 @@ class ModelTrainer:
         """
         compute test acc
         """
-        acc_list=[]
+        pred_logit_list=[]
+        label_list=[]
         with torch.no_grad():
             for batch_event,batch_sample in tqdm(
                     zip(test_loader,test_sample_list),
@@ -294,13 +295,14 @@ class ModelTrainer:
 
                 ### ACC
                 pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                batch_acc=Metric.compute_accuracy(
-                    pred_logit=pred_logit,
-                    label=label
-                )
-                acc_list.append(batch_acc)
+                pred_logit_list.append(pred_logit.cpu())
+                label_list.append(label.cpu())
+        acc=Metric.compute_accuracy(
+            pred_logit=torch.cat(pred_logit_list,dim=0),
+            label=torch.cat(label_list,dim=0)
+        )
         return {
-            "acc":sum(acc_list)/len(acc_list)
+            "acc":acc
         }
 
     @staticmethod
@@ -325,9 +327,8 @@ class ModelTrainer:
         """
         compute test acc
         """
-        range_1_acc_list=[]
-        range_2_acc_list=[]
-        range_3_acc_list=[]
+        range_pred_logit_lists=[[],[],[]]
+        range_label_lists=[[],[],[]]
         with torch.no_grad():
             for batch_event,batch_sample in tqdm(
                     zip(test_loader,test_sample_list),
@@ -371,35 +372,19 @@ class ModelTrainer:
                 ) # [n_sample,1]
                 pred_logit=pred_logit.squeeze(-1) # [n_sample,]
 
-                ### Range 1 Accuracy
-                if range_1_mask.any():
-                    range_1_acc=Metric.compute_accuracy(
-                        pred_logit=pred_logit[range_1_mask],
-                        label=label[range_1_mask]
-                    )
-                    range_1_acc_list.append(range_1_acc)
+                ### Collect predictions and labels for each range
+                for range_idx,range_mask in enumerate((range_1_mask,range_2_mask,range_3_mask)):
+                    if range_mask.any():
+                        range_pred_logit_lists[range_idx].append(pred_logit[range_mask].cpu())
+                        range_label_lists[range_idx].append(label[range_mask].cpu())
 
-                ### Range 2 Accuracy
-                if range_2_mask.any():
-                    range_2_acc=Metric.compute_accuracy(
-                        pred_logit=pred_logit[range_2_mask],
-                        label=label[range_2_mask]
-                    )
-                    range_2_acc_list.append(range_2_acc)
-
-                ### Range 3 Accuracy
-                if range_3_mask.any():
-                    range_3_acc=Metric.compute_accuracy(
-                        pred_logit=pred_logit[range_3_mask],
-                        label=label[range_3_mask]
-                    )
-                    range_3_acc_list.append(range_3_acc)
-        ### Average Accuracy
-        range_1_acc=sum(range_1_acc_list)/len(range_1_acc_list) if len(range_1_acc_list)>0 else 0.0
-        range_2_acc=sum(range_2_acc_list)/len(range_2_acc_list) if len(range_2_acc_list)>0 else 0.0
-        range_3_acc=sum(range_3_acc_list)/len(range_3_acc_list) if len(range_3_acc_list)>0 else 0.0
+        ### Compute accuracy over all samples in each range
         return {
-            "range_1_acc":range_1_acc,
-            "range_2_acc":range_2_acc,
-            "range_3_acc":range_3_acc
+            f"range_{range_idx+1}_acc":Metric.compute_accuracy(
+                pred_logit=torch.cat(pred_logit_list,dim=0),
+                label=torch.cat(label_list,dim=0)
+            ) if pred_logit_list else 0.0
+            for range_idx,(pred_logit_list,label_list) in enumerate(
+                zip(range_pred_logit_lists,range_label_lists)
+            )
         }
