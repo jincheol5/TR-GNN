@@ -148,49 +148,6 @@ class DataUtils:
         return TR_result
 
     @staticmethod
-    def save_SNAP_incomplete_noisy_eventstream(
-            eventstream:list,
-            dataset_name:Literal[
-                "CollegeMsg",
-                "bitcoin-alpha",
-                "bitcoin-otc"
-            ],
-            batch_size:int
-        ):
-        """
-        dataset의 test_loader에 대해 변환된 eventstream 저장.
-
-        eventstream=[
-            {
-                "src": src_tensor,
-                "dst": dst_tensor,
-                "t": time_tensor,
-                "edge": edge_tensor,
-            },
-            # 다음 배치 ...
-        ]
-        """
-        file_name=f"{dataset_name}_test_B{batch_size}_incomplete_noisy.pt"
-        file_path=os.path.join(BASE_PATH,"TR-GNN","incomplete_noisy",file_name)
-        os.makedirs(os.path.dirname(file_path),exist_ok=True)
-        torch.save(eventstream,file_path)
-        print(f"Save {file_name}!")
-
-    @staticmethod
-    def load_SNAP_incomplete_noisy_eventstream(
-            dataset_name:Literal[
-                "CollegeMsg",
-                "bitcoin-alpha",
-                "bitcoin-otc"
-            ],
-            batch_size:int
-        )->list[dict[str,torch.Tensor]]:
-        file_name=f"{dataset_name}_test_B{batch_size}_incomplete_noisy.pt"
-        file_path=os.path.join(BASE_PATH,"TR-GNN","incomplete_noisy",file_name)
-        eventstream=torch.load(file_path)
-        return eventstream
-
-    @staticmethod
     def save_graph_df_list_to_pickle(
             graph_df_list,
             file_name:str,
@@ -231,7 +188,7 @@ class DataUtils:
         - batch_size: 100
         """
         file_name=f"{file_name}.pt"
-        file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result","7-type",purpose,file_name)
+        file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result",purpose,file_name)
         os.makedirs(os.path.dirname(file_path),exist_ok=True)
         torch.save(TR_result_list,file_path)
         print(f"Save {file_name}!")
@@ -245,7 +202,7 @@ class DataUtils:
         7-type graph들의 각 type별 graph_list의 TR_result_list를 로드
         """
         file_name=f"{file_name}.pt"
-        file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result","7-type",purpose,file_name)
+        file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result",purpose,file_name)
         TR_result_list=torch.load(file_path)
         return TR_result_list
 
