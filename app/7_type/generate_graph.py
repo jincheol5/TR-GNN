@@ -53,11 +53,11 @@ def main():
 
         # save file
         for graph_type,graph_df_list in graph_df_list_dict.items():
-                DataUtils.save_graph_df_list_to_pickle(
-                    graph_df_list=graph_df_list,
-                    file_name=f"{graph_type}_{key}",
-                    purpose=purpose
-                )
+            DataUtils.save_graph_df_list_to_pickle(
+                graph_df_list=graph_df_list,
+                file_name=f"{graph_type}_{key}",
+                purpose=purpose
+            )
 
 if __name__=="__main__":
     """

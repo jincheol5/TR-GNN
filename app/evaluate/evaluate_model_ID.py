@@ -36,7 +36,6 @@ def main(**kwargs):
     ### 평가 관련 파라미터
     batch_size=200
     lr=kwargs["lr"]
-    sampling=kwargs["sampling"]
     source=kwargs["source"]
 
     ### set model_config
@@ -157,7 +156,6 @@ def main(**kwargs):
 
     ### Load model
     file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}"
-        
     model=ModelUtils.load_ID_model_parameter(
         model=model,
         file_name=file_name,
@@ -263,7 +261,6 @@ if __name__=="__main__":
     )
     parser.add_argument("--seed",type=int,choices=[1,2,3],default=1)
     parser.add_argument("--lr",type=float,choices=[0.0005,0.0001],default=0.0005)
-    parser.add_argument("--sampling",type=str,choices=["random","focused"],default="random")
     parser.add_argument("--dataset_name",
         type=str,
         choices=[
@@ -280,7 +277,6 @@ if __name__=="__main__":
         "model_name":args.model_name,
         "seed":args.seed,
         "lr":args.lr,
-        "sampling":args.sampling,
         "dataset_name":args.dataset_name,
         "source":args.source,
         "evaluate_type":args.evaluate_type

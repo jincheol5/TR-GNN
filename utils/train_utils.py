@@ -230,7 +230,7 @@ class TrainUtils:
                         TR_label=TR_label[batch_idx]
                     )
                 case "hop_range":
-                    TR_sample=SamplingUtils.TR_sampling_for_evaluate_hop_range(
+                    TR_sample=SamplingUtils.source_focused_hop_range_TR_sampling(
                         n_sample=300,
                         source=source,
                         query_time=query_time,
@@ -239,67 +239,3 @@ class TrainUtils:
                     )
             TR_sample_list.append(TR_sample)
         return TR_sample_list
-
-
-
-
-
-
-
-
-
-
-
-
-    @staticmethod
-    def convert_to_incomplete_noisy_eventstream(graph_loader:DataLoader)->list[dict[str,torch.Tensor]]:
-        """
-        graph_loader 내의 모든 batch eventstream에 대해 
-        - 10% event drop 먼저 적용 후
-        - 남아있는 edge event time 중 10%에 timestamp jitter 적용
-        각 개수는 내림하며, Gaussian noise(std=1.0)와 uniform jitter(±0.1)를 더한다.
-        변형 후 배치 내부를 timestamp 순으로 정렬하고 원본 배치 경계는 유지한다.
-        원본 tensor는 변경하지 않으며 빈 배치도 리스트에 포함한다.
-
-        Return:
-            converted_eventstream=[
-                {
-                    "src": src_tensor,
-                    "dst": dst_tensor,
-                    "t": time_tensor,
-                    "edge": edge_tensor,
-                },
-                # 다음 배치 ...
-            ]
-        """
-        converted_eventstream=[]
-        for src,dst,event_t,edge in tqdm(graph_loader,desc=f"Convert to incomplete_noisy_eventstream..."):
-            n_event=event_t.numel()
-            n_drop=int(n_event*0.1)
-            keep_mask=torch.ones(n_event,dtype=torch.bool)
-            drop_indices=torch.randperm(n_event)[:n_drop]
-            keep_mask[drop_indices]=False
-
-            kept_src=src[keep_mask]
-            kept_dst=dst[keep_mask]
-            kept_t=event_t[keep_mask]
-            kept_edge=edge[keep_mask]
-            if not kept_t.is_floating_point():
-                kept_t=kept_t.to(torch.float64)
-
-            n_jitter=int(kept_t.numel()*0.1)
-            if n_jitter>0:
-                jitter_indices=torch.randperm(kept_t.numel())[:n_jitter]
-                selected_t=kept_t[jitter_indices]
-                gaussian_noise=torch.randn_like(selected_t)*1.0
-                uniform_noise=(torch.rand_like(selected_t)*2.0-1.0)*0.1
-                kept_t[jitter_indices]=selected_t+gaussian_noise+uniform_noise
-
-            order=torch.argsort(kept_t,stable=True)
-            converted_eventstream.append({
-                "src":kept_src[order],
-                "dst":kept_dst[order],
-                "t":kept_t[order],
-                "edge":kept_edge[order],
-            })
-        return converted_eventstream

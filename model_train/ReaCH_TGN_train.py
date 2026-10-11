@@ -175,12 +175,8 @@ class ReaCH_TGN_Trainer:
 
                 ### Weighted BCE Loss
                 pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                if kwargs["sampling"]=="focused":
-                    final_weight=sample_weight*pair_weight
-                    criterion=nn.BCEWithLogitsLoss(weight=final_weight)
-                else: # random
-                    criterion=nn.BCEWithLogitsLoss(weight=pair_weight)
-                # criterion=nn.BCEWithLogitsLoss(weight=pair_weight)
+                final_weight=sample_weight*pair_weight
+                criterion=nn.BCEWithLogitsLoss(weight=final_weight)
                 loss=criterion(pred_logit,label)
                 total_loss=loss+NT_Xent_loss
 

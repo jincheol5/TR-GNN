@@ -100,11 +100,7 @@ class ModelTrainer:
 
                 ### Loss
                 pred_logit=pred_logit.squeeze(-1) # -> [B,]
-                if kwargs["sampling"]=="focused":
-                    criterion=nn.BCEWithLogitsLoss(weight=sample_weight)
-                else: # random
-                    criterion=nn.BCEWithLogitsLoss()
-                # criterion=nn.BCEWithLogitsLoss()
+                criterion=nn.BCEWithLogitsLoss(weight=sample_weight)
                 loss=criterion(pred_logit,label)
 
                 ### backward
