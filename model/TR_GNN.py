@@ -39,7 +39,7 @@ class TR_GNN(nn.Module):
         self.graph=graph
 
         # memory
-        self.n_node=self.graph.get_num_node()
+        self.n_node=self.graph.n_node
         self.memory=Memory(n_node=self.n_node,mem_dim=self.mem_dim)
 
         # last_state
