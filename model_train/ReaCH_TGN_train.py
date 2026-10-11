@@ -54,22 +54,12 @@ class ReaCH_TGN_Trainer:
             model.memory.init_memory_state()
 
             ### Epoch마다 train_sample_list 생성
-            if kwargs["sampling"]=="focused":
-                train_sample_list=TrainUtils.get_TR_sample_list(
-                    data_loader=train_loader,
-                    n_sample=kwargs["n_sample"],
-                    TR_result=TR_result,
-                    source=kwargs["source"],
-                    sampling=kwargs["sampling"]
-                )
-            else: # random
-                train_sample_list=TrainUtils.get_TR_sample_list(
-                    data_loader=train_loader,
-                    n_sample=kwargs["n_sample"],
-                    n_pair=kwargs["n_pair"],
-                    TR_result=TR_result,
-                    sampling=kwargs["sampling"]
-                )
+            train_sample_list=TrainUtils.get_TR_sample_list(
+                source=kwargs["source"],
+                data_loader=train_loader,
+                TR_result=TR_result,
+                sampling=kwargs["sampling"]
+            )
 
             model.train()
             for batch_idx,(batch_event,batch_sample) in tqdm(

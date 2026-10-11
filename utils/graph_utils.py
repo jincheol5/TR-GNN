@@ -3,8 +3,9 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 import torch
-from typing import Literal
+from typing import Any
 from tqdm import tqdm
+from torch.utils.data import DataLoader
 
 class GraphUtils:
     @staticmethod
@@ -251,3 +252,141 @@ class GraphGenerator:
             "community":community_graph_list,
             "caveman":caveman_graph_list
         }
+
+class GraphAlgorithm:
+    @staticmethod
+    def compute_TR_using_Time_Centric(
+            eventstream:list[tuple],
+            n_node:int,
+            gamma_table:dict[int,dict[int,dict[str,Any]]]|None=None,
+        )->dict[int,dict[int,dict[str,Any]]]:
+        """
+        Compute All Pairs Temporal Reachability using Time-Centric Algorithm
+        - shortest-hop path 중 가장 빨리 도착하는 path
+        - Strictly increasing temporal path
+        """
+        INF=float("inf")
+        NEG_INF=float("-inf")
+
+        ### Gamma Table
+        if gamma_table is None:
+            gamma_table={
+                source:{
+                    node:{
+                        "r": 1 if node==source else 0,
+                        "hop": 0 if node==source else INF,
+                        "first_t": 0.0 if node==source else INF,
+                        "last_t": 0.0 if node==source else INF,
+                        "entries":( 
+                            [(0,NEG_INF,0.0)] # (hop,arrival_t,first_t)
+                            if node==source
+                            else []
+                        )
+                    }
+                    for node in range(1,n_node+1) 
+                }
+                for source in range(1,n_node+1)
+            }
+
+        ### Compute Temporal Reachability
+        for src,dst,t in eventstream:
+            for source in range(1,n_node+1):
+                src_entries=gamma_table[source][src]["entries"]
+                if not src_entries:
+                    continue
+                new_entries=[]
+                for hop,arrival_t,first_t in src_entries:
+                    # strictly increasing
+                    if t<=arrival_t:
+                        continue
+                    new_hop=hop+1
+                    new_first_t=(t if hop==0 else first_t)
+                    new_entries.append((new_hop,t,new_first_t))
+
+                for new_hop,new_arrival_t,new_first_t in new_entries:
+                    dst_entries=gamma_table[source][dst]["entries"]
+
+                    # 기존 entry가 새 entry를 dominate하면 추가 X
+                    if any(
+                        old_hop<=new_hop
+                        and old_arrival_t<=new_arrival_t
+                        for old_hop,old_arrival_t,_ in dst_entries
+                    ):
+                        continue
+
+                    # 새 entry가 dominate하는 기존 entry 제거
+                    gamma_table[source][dst]["entries"]=[
+                        entry
+                        for entry in dst_entries
+                        if not (
+                            new_hop<=entry[0]
+                            and new_arrival_t<=entry[1]
+                        )
+                    ]
+                    gamma_table[source][dst]["entries"].append((new_hop,new_arrival_t,new_first_t))
+
+                    # minimum hop 결과 갱신
+                    if new_hop<gamma_table[source][dst]["hop"]:
+                        gamma_table[source][dst]["r"]=1
+                        gamma_table[source][dst]["hop"]=new_hop
+                        gamma_table[source][dst]["first_t"]=new_first_t
+                        gamma_table[source][dst]["last_t"]=new_arrival_t
+
+                    # 같은 minimum hop이면 더 빠른 path 선택
+                    elif (
+                        new_hop==gamma_table[source][dst]["hop"]
+                        and new_arrival_t<gamma_table[source][dst]["last_t"]
+                    ):
+                        gamma_table[source][dst]["first_t"]=new_first_t
+                        gamma_table[source][dst]["last_t"]=new_arrival_t
+        return gamma_table
+
+    @staticmethod
+    def compute_source_TR(
+            source:int,
+            pre_TR:torch.Tensor,
+            pre_TR_t:torch.Tensor,
+            batch_eventstream:dict[str,torch.Tensor]
+        )->torch.Tensor:
+        """
+        Compute Temporal Reachability using Time-Centric Algorithm.
+
+        Input:
+            source: int
+            pre_TR: [N+1,] boolean tensor
+            pre_TR_t: [N+1,] float tensor
+                이전 reachable 노드의 가장 빠른 도착 시각.
+                unreachable 노드와 source의 값은 사용하지 않는다.
+            batch_eventstream: dict
+                src: [B,]
+                dst: [B,]
+                t 또는 event_t: [B,]
+        Return:
+            updated_TR: [N+1,] boolean tensor 
+        """
+        INF=float("inf")
+        NEG_INF=float("-inf")
+
+        batch_src=batch_eventstream["src"]
+        batch_dst=batch_eventstream["dst"]
+        batch_event_t=batch_eventstream["t"]
+
+        updated_TR=pre_TR.clone()
+        updated_TR[0]=False
+        updated_TR[source]=True
+        arrival_times=[
+            float(arrival_t) if reachable else INF
+            for reachable,arrival_t in zip(updated_TR.tolist(),pre_TR_t.tolist())
+        ]
+        arrival_times[0]=INF
+        arrival_times[source]=NEG_INF
+
+        events=sorted(
+            zip(batch_src.tolist(),batch_dst.tolist(),batch_event_t.tolist()),
+            key=lambda event:event[2]
+        )
+        for src,dst,event_t in events:
+            if arrival_times[src]<event_t:
+                updated_TR[dst]=True
+                arrival_times[dst]=min(arrival_times[dst],event_t)
+        return updated_TR

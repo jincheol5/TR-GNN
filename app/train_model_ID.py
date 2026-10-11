@@ -80,7 +80,7 @@ def main(**kwargs):
 
     ### set dataset
     dataset_name=kwargs["dataset_name"]
-    data=DataUtils.preprocess_graph_dataset(dataset_name=dataset_name)
+    data=DataUtils.preprocess_snap_dataset(dataset_name=dataset_name)
     graph_df=data["graph_df"]
     if model_name=="DyGFormer":
         graph=DyGFormer_Graph(
@@ -94,7 +94,6 @@ def main(**kwargs):
             node_dim=node_dim,
             edge_dim=edge_dim
         )
-    graph.set_random_seed(seed=seed)
 
     ### set model
     match model_name:
@@ -175,19 +174,17 @@ def main(**kwargs):
             )
 
     ### set data_loader
-    train_df,val_df,_=TrainUtils.split_graph_df(df=graph_df)
-    train_dataset=TemporalGraphDataset(df=train_df)
-    val_dataset=TemporalGraphDataset(df=val_df)
-    train_loader=DataLoader(dataset=train_dataset,batch_size=batch_size,shuffle=False)
-    val_loader=DataLoader(dataset=val_dataset,batch_size=batch_size,shuffle=False)
+    graph_dataset=TemporalGraphDataset(df=graph_df)
+    graph_loader=DataLoader(dataset=graph_dataset,batch_size=batch_size,shuffle=False)
+    train_loader,val_loader,_=TrainUtils.split_data_loader(data_loader=graph_loader)
 
     ### load TR result
-    train_TR_result=DataUtils.load_TR_result(
+    train_TR_result=DataUtils.load_SNAP_TR_result(
         dataset_name=dataset_name,
         batch_size=batch_size,
         purpose="train"
     )
-    val_TR_result=DataUtils.load_TR_result(
+    val_TR_result=DataUtils.load_SNAP_TR_result(
         dataset_name=dataset_name,
         batch_size=batch_size,
         purpose="val"
@@ -195,10 +192,8 @@ def main(**kwargs):
 
     ### set val_sample_list using TR sampling
     val_sample_list=TrainUtils.get_TR_sample_list(
-        data_loader=val_loader,
-        n_sample=n_sample,
-        n_pair=n_pair,
         source=source,
+        data_loader=val_loader,
         TR_result=val_TR_result,
         sampling=sampling
     )
@@ -235,10 +230,7 @@ def main(**kwargs):
 
     ### save model
     if kwargs["save_model"]:
-        if sampling=="random":
-            file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}"
-        else: # focused
-            file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}"
+        file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}"
         ModelUtils.save_ID_model_parameter(
             model=model,
             file_name=file_name,
@@ -260,10 +252,9 @@ if __name__=="__main__":
     parser.add_argument("--sampling",
         type=str,
         choices=[
-            "random",
             "focused"
         ],
-        default="random"
+        default="focused"
     )
     parser.add_argument("--dataset_name",
         type=str,

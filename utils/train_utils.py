@@ -5,8 +5,9 @@ import numpy as np
 import torch
 from typing import Literal
 from tqdm import tqdm
-from torch.utils.data import Dataset,DataLoader
+from torch.utils.data import Dataset,DataLoader,Subset
 from graph import TemporalGraph
+from .graph_utils import GraphAlgorithm
 from .sampling_utils import SamplingUtils
 
 class TemporalGraphDataset(Dataset):
@@ -83,28 +84,61 @@ class TrainUtils:
         torch.backends.cudnn.benchmark=False
 
     @staticmethod
-    def split_graph_df(
-            df:pd.DataFrame,
+    def split_data_loader(
+            data_loader:DataLoader,
             train_ratio:float=0.7,
             val_ratio:float=0.15
         ):
         """
-        Input:
-            df
-            train_ratio
-            val_ratio
-        Return:
-            train_df
-            val_df
-            test_df
+        len(data_loader)의 배치 수를 기준으로 train/val/test를 분할.
+        train과 val 배치 수는 각각 비율을 곱해 내림하고 test는 나머지 샘플 전부를 사용. 
+        batch_size를 유지하며 마지막 배치도 포함.
+        입력 sampler의 순서를 한 번 확정한 뒤 각 loader는 shuffle 없이 사용.
         """
-        n=len(df)
-        train_end=int(n*train_ratio)
-        val_end=int(n*(train_ratio+val_ratio))
-        train_df=df.iloc[:train_end].reset_index(drop=True)
-        val_df=df.iloc[train_end:val_end].reset_index(drop=True)
-        test_df=df.iloc[val_end:].reset_index(drop=True)
-        return train_df,val_df,test_df
+        n_batch=len(data_loader)
+        batch_size=data_loader.batch_size
+        indices=list(data_loader.sampler)
+        train_end=min(int(n_batch*train_ratio)*batch_size,len(indices))
+        val_end=min(train_end+int(n_batch*val_ratio)*batch_size,len(indices))
+        loader_kwargs={
+            "batch_size":batch_size,
+            "shuffle":False,
+            "drop_last":False,
+            "collate_fn":data_loader.collate_fn,
+            "num_workers":data_loader.num_workers,
+            "pin_memory":data_loader.pin_memory,
+            "worker_init_fn":data_loader.worker_init_fn,
+            "generator":data_loader.generator,
+        }
+        if data_loader.num_workers>0:
+            loader_kwargs.update(
+                prefetch_factor=data_loader.prefetch_factor,
+                persistent_workers=data_loader.persistent_workers,
+                multiprocessing_context=data_loader.multiprocessing_context,
+                timeout=data_loader.timeout
+            )
+        train_loader=DataLoader(Subset(data_loader.dataset,indices[:train_end]),**loader_kwargs)
+        val_loader=DataLoader(Subset(data_loader.dataset,indices[train_end:val_end]),**loader_kwargs)
+        test_loader=DataLoader(Subset(data_loader.dataset,indices[val_end:]),**loader_kwargs)
+        return train_loader,val_loader,test_loader
+
+    @staticmethod
+    def convert_batch_to_eventstream(
+            src:torch.Tensor,
+            dst:torch.Tensor,
+            event_t:torch.Tensor
+        )->list[tuple[int,int,float]]:
+        """
+        (src, dst, event_t) 배치를 (src, dst, t) 튜플 리스트로 변환.
+        """
+        eventstream=[]
+        eventstream.extend(
+            (int(source),int(destination),float(timestamp))
+            for source,destination,timestamp in zip(
+                src.tolist(),dst.tolist(),event_t.tolist()
+            )
+        )
+        return eventstream
 
     @staticmethod
     def get_TR_result_using_Time_Centric(
@@ -115,7 +149,6 @@ class TrainUtils:
         Input:
             graph
             data_loader
-            max_hop
         Return:
             TR_result: dict
                 label: [batch_seq_len,N+1,N+1], boolean tensor
@@ -140,9 +173,14 @@ class TrainUtils:
             (len(data_loader),n_node+1,n_node+1),
             dtype=torch.int16
         )
-        for seq_idx,(_,_,event_t,_) in enumerate(tqdm(data_loader,desc="Compute TR result tensor...")):
-            query_time=event_t.max().item()
-            gamma_table=graph.compute_TR_using_Time_Centric(query_time=query_time) # 모든 source-dst에 대한 TR + minimum hop 계산
+        gamma_table=None
+        for seq_idx,(src,dst,event_t,_) in enumerate(tqdm(data_loader,desc="Compute TR result tensor...")):
+            eventstream=TrainUtils.convert_batch_to_eventstream(src=src,dst=dst,event_t=event_t)
+            gamma_table=GraphAlgorithm.compute_TR_using_Time_Centric(
+                eventstream=eventstream,
+                n_node=n_node,
+                gamma_table=gamma_table
+            )
             for src in range(1,n_node+1):
                 for dst in range(1,n_node+1):
                     info=gamma_table[src][dst]
@@ -160,124 +198,18 @@ class TrainUtils:
         }
 
     @staticmethod
-    def get_TR_result_using_Temporal_BFS(
-            graph:TemporalGraph,
-            data_loader:DataLoader
-        )->dict[str,torch.Tensor]:
-        """
-        Input:
-            graph
-            data_loader
-            max_hop
-        Return:
-            TR_result: dict
-                label: [batch_seq_len,N+1,N+1], boolean tensor
-                hop: [batch_seq_len,N+1,N+1], int16 tensor
-                last_t: [batch_seq_len,N+1,N+1], int16 tensor
-                first_t: [batch_seq_len,N+1,N+1], int16 tensor
-        """
-        n_node=graph.get_num_node()
-        TR_result=torch.zeros(
-            (len(data_loader),n_node+1,n_node+1),
-            dtype=torch.bool
-        )
-        TR_hop=torch.zeros(
-            (len(data_loader),n_node+1,n_node+1),
-            dtype=torch.int16
-        )
-        TR_last_t=torch.zeros(
-            (len(data_loader),n_node+1,n_node+1),
-            dtype=torch.int16
-        )
-        TR_first_t=torch.zeros(
-            (len(data_loader),n_node+1,n_node+1),
-            dtype=torch.int16
-        )
-        for seq_idx,(_,_,event_t,_) in enumerate(tqdm(data_loader,desc="Compute TR result tensor...")):
-            query_time=event_t.max().item()
-            for source in range(1,n_node+1):
-                TR_info=graph.compute_TR_using_Temporal_BFS(
-                    source=source,
-                    query_time=query_time
-                )
-                for dst in range(1,n_node+1):
-                    info=TR_info[dst]
-                    if not info["r"]:
-                        continue
-
-                    TR_result[seq_idx,source,dst]=True
-                    TR_hop[seq_idx,source,dst]=int(info["hop"])
-                    TR_first_t[seq_idx,source,dst]=int(info["first_t"])
-
-                    # source node의 last_t는 -inf이므로 padding 값 0을 유지
-                    if dst!=source:
-                        TR_last_t[seq_idx,source,dst]=int(info["last_t"])
-        return {
-            "label":TR_result,
-            "hop":TR_hop,
-            "last_t":TR_last_t,
-            "first_t":TR_first_t
-        }
-
-    @staticmethod
     def get_TR_sample_list(
+            source:int,
             data_loader:DataLoader,
-            n_sample:int=200,
-            n_pair:int=10,
-            source:int|None=None,
             TR_result:dict[str,torch.Tensor]|None=None,
-            sampling:Literal["random","focused"]=f"random"
+            sampling:Literal["focused","hop_range"]=f"focused"
         )->list[dict[str,torch.Tensor]]:
         """
         Input:
             data_loader
             n_pair
-            source
             TR_result
             sampling
-        Return:
-            TR_sample_list
-        """
-        TR_label=TR_result["label"]
-        TR_sample_list=[]
-        for batch_idx,(_,dst,event_t,_) in tqdm(
-                enumerate(data_loader),
-                desc="Generating TR samples..."
-            ):
-            query_time=event_t.max().item()
-            match sampling:
-                case "random":
-                    TR_sample=SamplingUtils.source_random_TR_sampling(
-                        n_sample=n_sample,
-                        n_pair=n_pair,
-                        query_time=query_time,
-                        TR_label=TR_label[batch_idx]
-                    )
-                case "focused":
-                    TR_sample=SamplingUtils.source_focused_TR_sampling(
-                        source=source,
-                        dst=dst,
-                        query_time=query_time,
-                        TR_label=TR_label[batch_idx]
-                    )
-            TR_sample_list.append(TR_sample)
-        return TR_sample_list
-
-    @staticmethod
-    def get_TR_sample_list_for_evaluation(
-            data_loader:DataLoader,
-            n_sample:int,
-            source:int,
-            TR_result:dict[str,torch.Tensor],
-            evaluate_type:Literal["base","hop_range"]=f"base"
-        )->list[dict[str,torch.Tensor]]:
-        """
-        Input:
-            data_loader
-            n_sample
-            source
-            TR_result
-            evaluate_type
         Return:
             TR_sample_list
         """
@@ -289,24 +221,17 @@ class TrainUtils:
                 desc="Generating TR samples..."
             ):
             query_time=event_t.max().item()
-            match evaluate_type:
-                case "base":
-                    TR_sample=SamplingUtils.TR_sampling_for_evaluate(
-                        n_sample=n_sample,
+            match sampling:
+                case "focused":
+                    TR_sample=SamplingUtils.source_focused_TR_sampling(
                         source=source,
                         dst=dst,
                         query_time=query_time,
                         TR_label=TR_label[batch_idx]
                     )
-                    # TR_sample=SamplingUtils.source_focused_TR_sampling(
-                    #     source=source,
-                    #     dst=dst,
-                    #     query_time=query_time,
-                    #     TR_label=TR_label[batch_idx]
-                    # )
                 case "hop_range":
                     TR_sample=SamplingUtils.TR_sampling_for_evaluate_hop_range(
-                        n_sample=n_sample,
+                        n_sample=300,
                         source=source,
                         query_time=query_time,
                         TR_label=TR_label[batch_idx],
@@ -315,63 +240,66 @@ class TrainUtils:
             TR_sample_list.append(TR_sample)
         return TR_sample_list
 
+
+
+
+
+
+
+
+
+
+
+
     @staticmethod
-    def get_source_candidates(
-            n_source:int,
-            TR_label:torch.Tensor
-        )->list[int]:
+    def convert_to_incomplete_noisy_eventstream(graph_loader:DataLoader)->list[dict[str,torch.Tensor]]:
         """
-        seq별 source의 reachability ratio를 계산하여
-        다음 조건을 모두 만족하는 source 후보를 반환.
+        graph_loader 내의 모든 batch eventstream에 대해 
+        - 10% event drop 먼저 적용 후
+        - 남아있는 edge event time 중 10%에 timestamp jitter 적용
+        각 개수는 내림하며, Gaussian noise(std=1.0)와 uniform jitter(±0.1)를 더한다.
+        변형 후 배치 내부를 timestamp 순으로 정렬하고 원본 배치 경계는 유지한다.
+        원본 tensor는 변경하지 않으며 빈 배치도 리스트에 포함한다.
 
-        조건:
-            - seq 평균 reachability ratio: 45% <= mean <= 55%
-            - padding node(id=0)는 source/destination 후보에서 제외.
-
-        Input:
-            TR_label: [seq_len,N+1,N+1] bool tensor
         Return:
-            source_candidates: list[int]
+            converted_eventstream=[
+                {
+                    "src": src_tensor,
+                    "dst": dst_tensor,
+                    "t": time_tensor,
+                    "edge": edge_tensor,
+                },
+                # 다음 배치 ...
+            ]
         """
-        _,n_node,_=TR_label.shape
-        n_node=n_node-1  # padding node 제외한 실제 node 수
+        converted_eventstream=[]
+        for src,dst,event_t,edge in tqdm(graph_loader,desc=f"Convert to incomplete_noisy_eventstream..."):
+            n_event=event_t.numel()
+            n_drop=int(n_event*0.1)
+            keep_mask=torch.ones(n_event,dtype=torch.bool)
+            drop_indices=torch.randperm(n_event)[:n_drop]
+            keep_mask[drop_indices]=False
 
-        ### padding source/destination 제거
-        # [seq_len,N,N]
-        label=TR_label[:,1:,1:]
+            kept_src=src[keep_mask]
+            kept_dst=dst[keep_mask]
+            kept_t=event_t[keep_mask]
+            kept_edge=edge[keep_mask]
+            if not kept_t.is_floating_point():
+                kept_t=kept_t.to(torch.float64)
 
-        ### reachable node 개수
-        # 자기 자신 포함
-        # [seq_len,N]
-        reachable_count=label.sum(dim=2)
+            n_jitter=int(kept_t.numel()*0.1)
+            if n_jitter>0:
+                jitter_indices=torch.randperm(kept_t.numel())[:n_jitter]
+                selected_t=kept_t[jitter_indices]
+                gaussian_noise=torch.randn_like(selected_t)*1.0
+                uniform_noise=(torch.rand_like(selected_t)*2.0-1.0)*0.1
+                kept_t[jitter_indices]=selected_t+gaussian_noise+uniform_noise
 
-        ### seq별 source reachability ratio
-        # [seq_len,N]
-        reachability_ratio=(reachable_count.float()/n_node)
-
-        ### source별 seq 통계
-        # [N]
-        mean_ratio=reachability_ratio.mean(dim=0)
-
-        ### 조건 적용
-        candidate_mask=(
-            (mean_ratio>=0.45) &
-            (mean_ratio<=0.55) 
-        )
-
-        ### 실제 source node id
-        # index 0 -> node id 1
-        source_candidates=torch.where(candidate_mask)[0]+1
-
-        ### 후보 중 n_source개 random sampling
-        if source_candidates.numel()>n_source:
-            perm=torch.randperm(source_candidates.numel())
-            source_candidates=source_candidates[perm[:n_source]]
-
-        ### list[int] 변환
-        source_candidates=(
-            source_candidates
-            .cpu()
-            .tolist()
-        )
-        return source_candidates
+            order=torch.argsort(kept_t,stable=True)
+            converted_eventstream.append({
+                "src":kept_src[order],
+                "dst":kept_dst[order],
+                "t":kept_t[order],
+                "edge":kept_edge[order],
+            })
+        return converted_eventstream

@@ -62,7 +62,7 @@ def main(**kwargs):
 
     ### set dataset
     dataset_name=kwargs["dataset_name"]
-    data=DataUtils.preprocess_graph_dataset(dataset_name=dataset_name)
+    data=DataUtils.preprocess_snap_dataset(dataset_name=dataset_name)
     graph_df=data["graph_df"]
     if model_name=="DyGFormer":
         graph=DyGFormer_Graph(
@@ -76,7 +76,6 @@ def main(**kwargs):
             node_dim=node_dim,
             edge_dim=edge_dim
         )
-    graph.set_random_seed(seed=seed)
 
     ### set model
     match model_name:
@@ -157,10 +156,8 @@ def main(**kwargs):
             )
 
     ### Load model
-    if sampling=="random":
-        file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}"
-    else: # focused
-        file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}"
+    file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}"
+        
     model=ModelUtils.load_ID_model_parameter(
         model=model,
         file_name=file_name,
@@ -168,12 +165,12 @@ def main(**kwargs):
     )
 
     ### set data_loader
-    _,_,test_df=TrainUtils.split_graph_df(df=graph_df)
-    test_dataset=TemporalGraphDataset(df=test_df)
-    test_loader=DataLoader(dataset=test_dataset,batch_size=batch_size,shuffle=False)
+    graph_dataset=TemporalGraphDataset(df=graph_df)
+    graph_loader=DataLoader(dataset=graph_dataset,batch_size=batch_size,shuffle=False)
+    _,_,test_loader=TrainUtils.split_data_loader(data_loader=graph_loader)
 
     ### load TR result
-    test_TR_result=DataUtils.load_TR_result(
+    test_TR_result=DataUtils.load_SNAP_TR_result(
         dataset_name=dataset_name,
         batch_size=batch_size,
         purpose="test"
@@ -183,33 +180,32 @@ def main(**kwargs):
     evaluate_type=kwargs["evaluate_type"]
     if evaluate_type=="base":
         ### set base test_sample_list
-        base_test_sample_list=TrainUtils.get_TR_sample_list_for_evaluation(
-            data_loader=test_loader,
-            n_sample=1000,
+        test_sample_list=TrainUtils.get_TR_sample_list(
             source=source,
+            data_loader=test_loader,
             TR_result=test_TR_result,
-            evaluate_type=evaluate_type
+            sampling=f"focused"
         )
         match model_name:
             case "TGAT"|"TGN"|"DyGFormer":
                 evaluate_result=ModelTrainer.evaluate(
                     model=model,
                     test_loader=test_loader,
-                    test_sample_list=base_test_sample_list,
+                    test_sample_list=test_sample_list,
                     **model_config
                 )
             case "ReaCH-TGN":
                 evaluate_result=ReaCH_TGN_Trainer.evaluate(
                     model=model,
                     test_loader=test_loader,
-                    test_sample_list=base_test_sample_list,
+                    test_sample_list=test_sample_list,
                     **model_config
                 )
             case "TR-GNN":
                 evaluate_result=TR_GNN_Trainer.evaluate(
                     model=model,
                     test_loader=test_loader,
-                    test_sample_list=base_test_sample_list,
+                    test_sample_list=test_sample_list,
                     **model_config
                 )
 
@@ -220,33 +216,32 @@ def main(**kwargs):
 
     if evaluate_type=="hop_range":
         ### set hop_range test_sample_list
-        hop_range_test_sample_list=TrainUtils.get_TR_sample_list_for_evaluation(
-            data_loader=test_loader,
-            n_sample=300,
+        test_sample_list=TrainUtils.get_TR_sample_list(
             source=source,
+            data_loader=test_loader,
             TR_result=test_TR_result,
-            evaluate_type="hop_range"
+            sampling=f"hop_range"
         )
         match model_name:
             case "TGAT"|"TGN"|"DyGFormer":
                 evaluate_result=ModelTrainer.evaluate_hop_range(
                     model=model,
                     test_loader=test_loader,
-                    test_sample_list=hop_range_test_sample_list,
+                    test_sample_list=test_sample_list,
                     **model_config
                 )
             case "ReaCH-TGN":
                 evaluate_result=ReaCH_TGN_Trainer.evaluate_hop_range(
                     model=model,
                     test_loader=test_loader,
-                    test_sample_list=hop_range_test_sample_list,
+                    test_sample_list=test_sample_list,
                     **model_config
                 )
             case "TR-GNN":
                 evaluate_result=TR_GNN_Trainer.evaluate_hop_range(
                     model=model,
                     test_loader=test_loader,
-                    test_sample_list=hop_range_test_sample_list,
+                    test_sample_list=test_sample_list,
                     **model_config
                 )
         print(f"Evaluation 2 Result:")

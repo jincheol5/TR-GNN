@@ -54,11 +54,10 @@ class TR_GNN_Trainer:
 
             ### Epoch마다 train_sample_list 생성
             train_sample_list=TrainUtils.get_TR_sample_list(
-                data_loader=train_loader,
-                n_sample=kwargs["n_sample"],
-                TR_result=TR_result,
                 source=kwargs["source"],
-                sampling="focused"
+                data_loader=train_loader,
+                TR_result=TR_result,
+                sampling=kwargs["sampling"]
             )
 
             model.train()

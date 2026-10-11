@@ -16,16 +16,14 @@ class DyGFormer_Graph(TGN_Graph):
             node_ft:np.ndarray=None,
             edge_ft:np.ndarray=None,
             node_dim:int=32,
-            edge_dim:int=32,
-            bipartite:bool=False
+            edge_dim:int=32
         ):
         super().__init__(
             graph_df=graph_df,
             node_ft=node_ft,
             edge_ft=edge_ft,
             node_dim=node_dim,
-            edge_dim=edge_dim,
-            bipartite=bipartite
+            edge_dim=edge_dim
         )
 
     def get_history_seq(self,
