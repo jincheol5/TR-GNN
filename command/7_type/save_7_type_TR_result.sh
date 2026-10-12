@@ -10,7 +10,7 @@ for graph_type in ladder grid tree erdos_renyi barabasi_albert community caveman
                 batch_size=200
             fi
 
-            python -m app.main --graph_type "$graph_type" --purpose "$purpose" --n_node "$n_node" --batch_size "$batch_size"
+            python -m app.7_type.save_7_type_TR_result --graph_type "$graph_type" --purpose "$purpose" --n_node "$n_node" --batch_size "$batch_size"
         done
     done
 done
