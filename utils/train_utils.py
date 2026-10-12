@@ -6,7 +6,7 @@ import torch
 from typing import Literal
 from tqdm import tqdm
 from torch.utils.data import Dataset,DataLoader,Subset
-from graph import TemporalGraph
+from graph import TemporalGraph,TGN_Graph,DyGFormer_Graph
 from .graph_utils import GraphAlgorithm
 from .sampling_utils import SamplingUtils
 
@@ -239,3 +239,98 @@ class TrainUtils:
                     )
             TR_sample_list.append(TR_sample)
         return TR_sample_list
+
+    @staticmethod
+    def get_graph_list(
+            graph_df_list_dict:dict[str,list[pd.DataFrame]],
+            model_name:Literal["TGAT","TGN","DyGFormer","ReaCH-TGN","TR-GNN"],
+            node_dim:int,
+            edge_dim:int
+        ):
+        graph_type_list=[
+            "ladder",
+            "grid",
+            "tree",
+            "erdos_renyi",
+            "barabasi_albert",
+            "community",
+            "caveman"
+        ]
+        graph_list=[]
+        for graph_type in graph_type_list:
+            graph_df_list=graph_df_list_dict[graph_type]
+            for graph_df in graph_df_list:
+                if model_name=="DyGFormer":
+                    graph=DyGFormer_Graph(
+                        graph_df=graph_df,
+                        node_dim=node_dim,
+                        edge_dim=edge_dim
+                    )
+                else: # TGAT, TGN, ReaCH-TGN, TR-GNN
+                    graph=TGN_Graph(
+                        graph_df=graph_df,
+                        node_dim=node_dim,
+                        edge_dim=edge_dim
+                    )
+                graph_list.append(graph)
+        return graph_list
+
+    @staticmethod
+    def get_graph_loader_list(
+            graph_df_list_dict:dict[str,list[pd.DataFrame]],
+            batch_size:int
+        ):
+        """
+        """
+        graph_type_list=[
+            "ladder",
+            "grid",
+            "tree",
+            "erdos_renyi",
+            "barabasi_albert",
+            "community",
+            "caveman"
+        ]
+        graph_loader_list=[]
+        for graph_type in graph_type_list:
+            graph_df_list=graph_df_list_dict[graph_type]
+            for graph_df in graph_df_list:
+                graph_dataset=TemporalGraphDataset(df=graph_df)
+                graph_loader=DataLoader(graph_dataset,batch_size=batch_size,shuffle=False)
+                graph_loader_list.append(graph_loader)
+        return graph_loader_list
+
+    @staticmethod
+    def get_sample_loader_list(
+            n_node:int,
+            graph_loader_list:list[DataLoader],
+            TR_result_list:list[dict[str,torch.Tensor]]
+        ):
+        """
+        graph_df (with source) 하나 -> sample_loader 하나
+        sample: 
+            {
+                "src":src,
+                "dst":dst,
+                "label":label,
+                "query_t":query_t,
+                "pos_mask":pos_mask,
+                "weight":weight
+            }
+
+        Input:
+            n_node
+            graph_loader_list: all type graph_loader list
+            TR_result_list: all type TR_result list
+        """
+        sample_loader_list=[]
+        for graph_loader,TR_result in zip(graph_loader_list,TR_result_list):
+            source=random.randint(1,n_node)
+            sample_loader=TrainUtils.get_TR_sample_list(
+                source=source,
+                data_loader=graph_loader,
+                TR_result=TR_result,
+                sampling=f"focused"
+            )
+            sample_loader_list.append(sample_loader)
+        return sample_loader_list

@@ -5,6 +5,7 @@ from module import TimeEncoder,GraphAttnEmbedding,TR_Decoder
 
 class TGAT(nn.Module):
     def __init__(self,
+            n_node:int,
             node_dim:int,
             edge_dim:int,
             time_dim:int,
@@ -21,6 +22,7 @@ class TGAT(nn.Module):
         self.time_dim=time_dim
         self.latent_dim=latent_dim
         self.embed_dim=embed_dim
+        self.n_node=n_node
         self.graph=graph
         self.n_layer=n_layer
         self.n_neighbor=n_neighbor
@@ -36,6 +38,7 @@ class TGAT(nn.Module):
             time_dim=time_dim,
             latent_dim=latent_dim,
             embed_dim=embed_dim,
+            n_node=self.n_node,
             graph=self.graph,
             n_layer=n_layer,
             n_neighbor=n_neighbor,
@@ -50,6 +53,13 @@ class TGAT(nn.Module):
             embed_dim=embed_dim,
             latent_dim=latent_dim
         )
+
+    def set_graph(self,graph:TGN_Graph):
+        device=next(self.parameters()).device
+        graph.to_device(device=device)
+        self.graph=graph
+        self.n_node=graph.n_node
+        self.encoder.set_graph(graph=graph)
 
     def embedding(self,
             src:torch.Tensor,

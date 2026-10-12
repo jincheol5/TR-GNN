@@ -5,9 +5,19 @@ from graph import DyGFormer_Graph
 
 class DyGFormer_Module:
     def __init__(self,
+            n_node:int,
             graph:DyGFormer_Graph
         ):
+        self.n_node=n_node
         self.graph=graph
+        self.node_ft=None
+        self.edge_ft=None
+        if graph is not None:
+            self.set_graph(graph=graph)
+
+    def set_graph(self,graph:DyGFormer_Graph):
+        self.graph=graph
+        self.n_node=graph.n_node
         self.node_ft=graph.get_node_ft().to(device="cpu")
         self.edge_ft=graph.get_edge_ft().to(device="cpu")
 

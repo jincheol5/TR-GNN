@@ -6,6 +6,7 @@ from module import TimeEncoder,Memory,GraphAttnEmbedding,GRUMemoryUpdater,TR_Dec
 
 class TGN(nn.Module):
     def __init__(self,
+            n_node:int,
             node_dim:int,
             edge_dim:int,
             time_dim:int,
@@ -36,10 +37,10 @@ class TGN(nn.Module):
         self.aggr_fn=aggr_fn
         
         # graph
+        self.n_node=n_node
         self.graph=graph
 
         # memory
-        self.n_node=self.graph.n_node
         self.memory=Memory(n_node=self.n_node,mem_dim=self.mem_dim)
 
         # time encoder
@@ -52,6 +53,7 @@ class TGN(nn.Module):
             msg_dim=msg_dim,
             time_dim=time_dim,
             time_encoder=self.time_encoder,
+            n_node=self.n_node,
             graph=self.graph,
             msg_fn=msg_fn,
             aggr_fn=aggr_fn
@@ -65,6 +67,7 @@ class TGN(nn.Module):
             latent_dim=latent_dim,
             mem_dim=mem_dim,
             embed_dim=embed_dim,
+            n_node=self.n_node,
             graph=self.graph,
             n_layer=n_layer,
             n_neighbor=n_neighbor,
@@ -79,6 +82,17 @@ class TGN(nn.Module):
             embed_dim=embed_dim,
             latent_dim=latent_dim
         )
+
+    def set_graph(self,graph:TGN_Graph):
+        device=next(self.parameters()).device
+        graph.to_device(device=device)
+        self.graph=graph
+        self.n_node=graph.n_node
+        self.memory_updater.set_graph(graph=graph)
+        self.encoder.set_graph(graph=graph)
+
+        # set memory
+        self.memory=Memory(n_node=self.n_node,mem_dim=self.mem_dim).to(device)
 
     def update_model_memory(self,
             src:torch.Tensor,

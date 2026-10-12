@@ -99,6 +99,7 @@ def main(**kwargs):
     match model_name:
         case "TGAT":
             model=TGAT(
+                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,
@@ -111,6 +112,7 @@ def main(**kwargs):
             )
         case "TGN":
             model=TGN(
+                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,
@@ -127,6 +129,7 @@ def main(**kwargs):
             )
         case "DyGFormer":
             model=DyGFormer(
+                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 latent_dim=latent_dim,
@@ -142,6 +145,7 @@ def main(**kwargs):
             )
         case "ReaCH-TGN":
             model=ReaCH_TGN(
+                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,
@@ -158,6 +162,7 @@ def main(**kwargs):
             )
         case "TR-GNN":
             model=TR_GNN(
+                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,

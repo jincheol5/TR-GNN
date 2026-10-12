@@ -13,7 +13,7 @@ class Last_State(nn.Module):
         self.n_node=n_node
         self.register_buffer(
             "last_state",
-            torch.zeros(n_node+1),
+            torch.zeros(self.n_node+1),
         )
         self.init_last_state()
 

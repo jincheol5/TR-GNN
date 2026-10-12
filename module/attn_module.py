@@ -44,6 +44,7 @@ class TemporalGraphAttn(nn.Module):
                 out_features=self.embed_dim
             )
         )
+
     def forward(self,
             tar_vec:torch.Tensor,
             tar_ts_vec:torch.Tensor,

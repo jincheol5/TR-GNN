@@ -5,6 +5,7 @@ from module import TimeEncoder,TransformerEncoderBlock,DyGFormer_Module,TR_Decod
 
 class DyGFormer(nn.Module):
     def __init__(self,
+            n_node:int,
             node_dim:int,
             edge_dim:int,
             latent_dim:int,
@@ -26,6 +27,7 @@ class DyGFormer(nn.Module):
         self.co_dim=co_dim
         self.common_dim=common_dim
         self.embed_dim=embed_dim
+        self.n_node=n_node
         self.graph=graph
         self.n_layer=n_layer
         self.n_head=n_head
@@ -33,7 +35,7 @@ class DyGFormer(nn.Module):
         self.patch_size=patch_size
 
         # DyGFormer Module
-        self.module=DyGFormer_Module(graph=graph)
+        self.module=DyGFormer_Module(n_node=self.n_node,graph=graph)
 
         # time encoder
         self.time_encoder=TimeEncoder(time_dim=time_dim)
@@ -90,6 +92,13 @@ class DyGFormer(nn.Module):
             embed_dim=embed_dim,
             latent_dim=latent_dim
         )
+
+    def set_graph(self,graph:DyGFormer_Graph):
+        device=next(self.parameters()).device
+        graph.to_device(device=device)
+        self.graph=graph
+        self.n_node=graph.n_node
+        self.module.set_graph(graph=graph)
 
     def forward(self,
             src:torch.Tensor,

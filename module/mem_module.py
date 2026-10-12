@@ -19,11 +19,11 @@ class Memory(nn.Module):
         self.mem_dim=mem_dim
         self.register_buffer(
             "mem_vec",
-            torch.zeros(n_node+1,mem_dim),
+            torch.zeros(self.n_node+1,self.mem_dim),
         )
         self.register_buffer(
             "mem_t",
-            torch.zeros(n_node+1),
+            torch.zeros(self.n_node+1),
         )
         self.init_memory_state()
     
@@ -99,6 +99,7 @@ class Memory(nn.Module):
 
 class MemoryUpdater(nn.Module):
     def __init__(self,
+            n_node:int,
             mem_dim:int,
             edge_dim:int,
             time_dim:int,
@@ -117,6 +118,7 @@ class MemoryUpdater(nn.Module):
         self.aggr_fn=aggr_fn
 
         # data
+        self.n_node=n_node
         self.graph=graph
 
         # module
@@ -144,6 +146,10 @@ class MemoryUpdater(nn.Module):
                     out_features=msg_dim
                 )
             )
+
+    def set_graph(self,graph:TGN_Graph):
+        self.graph=graph
+        self.n_node=graph.n_node
     
     def create_message(self,
             src:torch.Tensor,
@@ -331,6 +337,7 @@ class MemoryUpdater(nn.Module):
 
 class GRUMemoryUpdater(MemoryUpdater):
     def __init__(self,
+            n_node:int,
             mem_dim:int,
             edge_dim:int,
             time_dim:int,
@@ -346,6 +353,7 @@ class GRUMemoryUpdater(MemoryUpdater):
             time_dim=time_dim,
             msg_dim=msg_dim,
             time_encoder=time_encoder,
+            n_node=n_node,
             graph=graph,
             msg_fn=msg_fn,
             aggr_fn=aggr_fn

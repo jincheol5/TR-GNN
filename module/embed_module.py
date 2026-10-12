@@ -44,6 +44,7 @@ class IdentityEmbedding(EmbeddingModule):
 
 class GraphEmbeddingModule(EmbeddingModule):
     def __init__(self,
+            n_node:int,
             node_dim:int=32,
             edge_dim:int=32,
             time_dim:int=32,
@@ -64,6 +65,7 @@ class GraphEmbeddingModule(EmbeddingModule):
             embed_dim=embed_dim
         )
         self.time_dim=time_dim
+        self.n_node=n_node
         self.graph=graph
         self.n_layer=n_layer
         self.n_neighbor=n_neighbor
@@ -74,6 +76,10 @@ class GraphEmbeddingModule(EmbeddingModule):
 
         # module
         self.time_encoder=time_encoder
+
+    def set_graph(self,graph:TGN_Graph):
+        self.graph=graph
+        self.n_node=graph.n_node
 
     def compute_embedding(self,
             tar:torch.Tensor,
@@ -181,6 +187,7 @@ class GraphEmbeddingModule(EmbeddingModule):
 
 class GraphSumEmbedding(GraphEmbeddingModule):
     def __init__(self,
+            n_node:int,
             node_dim:int=32,
             edge_dim:int=32,
             time_dim:int=32,
@@ -201,6 +208,7 @@ class GraphSumEmbedding(GraphEmbeddingModule):
             latent_dim=latent_dim,
             mem_dim=mem_dim,
             embed_dim=embed_dim,
+            n_node=n_node,
             graph=graph,
             n_layer=n_layer,
             n_neighbor=n_neighbor,
@@ -282,6 +290,7 @@ class GraphSumEmbedding(GraphEmbeddingModule):
 
 class GraphAttnEmbedding(GraphEmbeddingModule):
     def __init__(self,
+            n_node:int,
             node_dim:int=32,
             edge_dim:int=32,
             time_dim:int=32,
@@ -303,6 +312,7 @@ class GraphAttnEmbedding(GraphEmbeddingModule):
             latent_dim=latent_dim,
             mem_dim=mem_dim,
             embed_dim=embed_dim,
+            n_node=n_node,
             graph=graph,
             n_layer=n_layer,
             n_neighbor=n_neighbor,
@@ -322,6 +332,7 @@ class GraphAttnEmbedding(GraphEmbeddingModule):
                     n_head=n_head
                 )
             for idx in range(n_layer)])
+
     def aggregate(self,
             tar_vec:torch.Tensor,
             tar_ts_vec:torch.Tensor,
