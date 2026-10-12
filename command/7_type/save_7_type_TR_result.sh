@@ -3,7 +3,13 @@ set -e
 
 for graph_type in ladder grid tree erdos_renyi barabasi_albert community caveman; do
     for purpose in train val test; do
-        for n_node in 100 500 1000; do
+        if [ "$purpose" = "test" ]; then
+            n_nodes="100 500 1000"
+        else
+            n_nodes="100"
+        fi
+
+        for n_node in $n_nodes; do
             if [ "$n_node" -eq 100 ]; then
                 batch_size=32
             else
