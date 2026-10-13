@@ -25,7 +25,7 @@ def main(**kwargs):
 
     ### TGN 하이퍼 파라미터
     msg_fn=f"mlp"
-    aggr_fn=f"last"
+    aggr_fn=f"mean"
 
     ### DyGFormer 하이퍼 파라미터
     co_dim=32
@@ -99,20 +99,17 @@ def main(**kwargs):
     match model_name:
         case "TGAT":
             model=TGAT(
-                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,
                 latent_dim=latent_dim,
                 embed_dim=embed_dim,
-                graph=graph,
                 n_layer=n_layer,
                 n_neighbor=n_neighbor,
                 n_head=n_head
             )
         case "TGN":
             model=TGN(
-                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,
@@ -120,7 +117,6 @@ def main(**kwargs):
                 msg_dim=msg_dim,
                 mem_dim=mem_dim,
                 embed_dim=embed_dim,
-                graph=graph,
                 n_layer=n_layer,
                 n_neighbor=n_neighbor,
                 n_head=n_head,
@@ -129,7 +125,6 @@ def main(**kwargs):
             )
         case "DyGFormer":
             model=DyGFormer(
-                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 latent_dim=latent_dim,
@@ -137,7 +132,6 @@ def main(**kwargs):
                 co_dim=co_dim,
                 common_dim=common_dim,
                 embed_dim=embed_dim,
-                graph=graph,
                 n_layer=n_layer,
                 n_head=n_head,
                 max_history_len=max_history_len,
@@ -145,7 +139,6 @@ def main(**kwargs):
             )
         case "ReaCH-TGN":
             model=ReaCH_TGN(
-                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,
@@ -153,7 +146,6 @@ def main(**kwargs):
                 msg_dim=msg_dim,
                 mem_dim=mem_dim,
                 embed_dim=embed_dim,
-                graph=graph,
                 n_layer=n_layer,
                 n_neighbor=n_neighbor,
                 n_head=n_head,
@@ -162,7 +154,6 @@ def main(**kwargs):
             )
         case "TR-GNN":
             model=TR_GNN(
-                n_node=graph.n_node,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,
@@ -170,13 +161,13 @@ def main(**kwargs):
                 msg_dim=msg_dim,
                 mem_dim=mem_dim,
                 embed_dim=embed_dim,
-                graph=graph,
                 n_layer=n_layer,
                 n_neighbor=n_neighbor,
                 n_head=n_head,
                 msg_fn=msg_fn,
                 aggr_fn=aggr_fn
             )
+    model.set_graph(graph=graph)
 
     ### set data_loader
     graph_dataset=TemporalGraphDataset(df=graph_df)
@@ -195,12 +186,14 @@ def main(**kwargs):
         purpose="val"
     )
 
-    ### set val_sample_list using TR sampling
-    val_sample_list=TrainUtils.get_TR_sample_list(
+    ### set val_sample_loader using TR sampling
+    val_sample_loader=TrainUtils.get_TR_sample_loader(
         source=source,
         data_loader=val_loader,
         TR_result=val_TR_result,
-        sampling=sampling
+        sampling=f"base",
+        n_sample=n_sample,
+        n_pair=n_pair
     )
 
     ### train model
@@ -210,7 +203,7 @@ def main(**kwargs):
                 model=model,
                 train_loader=train_loader,
                 val_loader=val_loader,
-                val_sample_list=val_sample_list,
+                val_sample_loader=val_sample_loader,
                 TR_result=train_TR_result,
                 **model_config
             )
@@ -219,7 +212,7 @@ def main(**kwargs):
                 model=model,
                 train_loader=train_loader,
                 val_loader=val_loader,
-                val_sample_list=val_sample_list,
+                val_sample_loader=val_sample_loader,
                 TR_result=train_TR_result,
                 **model_config
             )
@@ -228,14 +221,17 @@ def main(**kwargs):
                 model=model,
                 train_loader=train_loader,
                 val_loader=val_loader,
-                val_sample_list=val_sample_list,
+                val_sample_loader=val_sample_loader,
                 TR_result=train_TR_result,
                 **model_config
             )
 
     ### save model
     if kwargs["save_model"]:
-        file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}"
+        if sampling=="focused":
+            file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}_focused"
+        else: # random
+            file_name=f"{model_name}_{dataset_name}_S{seed}_LR{lr}_B{batch_size}_SRC{source}_random"
         ModelUtils.save_ID_model_parameter(
             model=model,
             file_name=file_name,
@@ -254,13 +250,6 @@ if __name__=="__main__":
     )
     parser.add_argument("--seed",type=int,choices=[1,2,3],default=1)
     parser.add_argument("--lr",type=float,choices=[0.0005,0.0001],default=0.0005)
-    parser.add_argument("--sampling",
-        type=str,
-        choices=[
-            "focused"
-        ],
-        default="focused"
-    )
     parser.add_argument("--dataset_name",
         type=str,
         choices=[
@@ -271,15 +260,23 @@ if __name__=="__main__":
         default="CollegeMsg"
     )
     parser.add_argument("--source",type=int,default=1)
+    parser.add_argument("--sampling",
+        type=str,
+        choices=[
+            "random",
+            "focused"
+        ],
+        default="focused"
+    )
     parser.add_argument("--save_model",type=int,default=0)
     args=parser.parse_args()
     app_config={
         "model_name":args.model_name,
         "seed":args.seed,
         "lr":args.lr,
-        "sampling":args.sampling,
         "dataset_name":args.dataset_name,
         "source":args.source,
+        "sampling":args.sampling,
         "save_model":args.save_model
     }
     main(**app_config)

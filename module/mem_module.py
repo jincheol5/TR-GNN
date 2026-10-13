@@ -99,13 +99,11 @@ class Memory(nn.Module):
 
 class MemoryUpdater(nn.Module):
     def __init__(self,
-            n_node:int,
             mem_dim:int,
             edge_dim:int,
             time_dim:int,
             msg_dim:int,
             time_encoder:TimeEncoder,
-            graph:TGN_Graph,
             msg_fn:Literal["concat","mlp"]="concat",
             aggr_fn:Literal["last","mean"]="last"
         ):
@@ -116,10 +114,6 @@ class MemoryUpdater(nn.Module):
         self.msg_dim=msg_dim
         self.msg_fn=msg_fn
         self.aggr_fn=aggr_fn
-
-        # data
-        self.n_node=n_node
-        self.graph=graph
 
         # module
         self.time_encoder=time_encoder
@@ -337,13 +331,11 @@ class MemoryUpdater(nn.Module):
 
 class GRUMemoryUpdater(MemoryUpdater):
     def __init__(self,
-            n_node:int,
             mem_dim:int,
             edge_dim:int,
             time_dim:int,
             msg_dim:int,
             time_encoder:TimeEncoder,
-            graph:TGN_Graph,
             msg_fn:Literal["concat","mlp"]="concat",
             aggr_fn:Literal["last","mean"]="last"
         ):
@@ -353,8 +345,6 @@ class GRUMemoryUpdater(MemoryUpdater):
             time_dim=time_dim,
             msg_dim=msg_dim,
             time_encoder=time_encoder,
-            n_node=n_node,
-            graph=graph,
             msg_fn=msg_fn,
             aggr_fn=aggr_fn
         )

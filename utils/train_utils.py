@@ -198,11 +198,13 @@ class TrainUtils:
         }
 
     @staticmethod
-    def get_TR_sample_list(
+    def get_TR_sample_loader(
             source:int,
             data_loader:DataLoader,
             TR_result:dict[str,torch.Tensor]|None=None,
-            sampling:Literal["focused","hop_range"]=f"focused"
+            sampling:Literal["random","focused","base","hop_range"]=f"focused",
+            n_sample:int=200,
+            n_pair:int=10
         )->list[dict[str,torch.Tensor]]:
         """
         Input:
@@ -211,21 +213,35 @@ class TrainUtils:
             TR_result
             sampling
         Return:
-            TR_sample_list
+            TR_sample_loader
         """
         TR_label=TR_result["label"]
         TR_hop=TR_result["hop"]
-        TR_sample_list=[]
+        TR_sample_loader=[]
         for batch_idx,(_,dst,event_t,_) in tqdm(
                 enumerate(data_loader),
                 desc="Generating TR samples..."
             ):
             query_time=event_t.max().item()
             match sampling:
+                case "random":
+                    TR_sample=SamplingUtils.source_random_TR_sampling(
+                        n_sample=n_sample,
+                        n_pair=n_pair,
+                        query_time=query_time,
+                        TR_label=TR_label[batch_idx]
+                    )
                 case "focused":
                     TR_sample=SamplingUtils.source_focused_TR_sampling(
                         source=source,
                         dst=dst,
+                        query_time=query_time,
+                        TR_label=TR_label[batch_idx]
+                    )
+                case "base":
+                    TR_sample=SamplingUtils.source_focused_base_TR_sampling(
+                        n_sample=200,
+                        source=source,
                         query_time=query_time,
                         TR_label=TR_label[batch_idx]
                     )
@@ -237,8 +253,8 @@ class TrainUtils:
                         TR_label=TR_label[batch_idx],
                         TR_hop=TR_hop[batch_idx]
                     )
-            TR_sample_list.append(TR_sample)
-        return TR_sample_list
+            TR_sample_loader.append(TR_sample)
+        return TR_sample_loader
 
     @staticmethod
     def get_graph_list(

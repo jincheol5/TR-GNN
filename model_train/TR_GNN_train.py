@@ -11,7 +11,7 @@ class TR_GNN_Trainer:
             model:TR_GNN,
             train_loader:DataLoader,
             val_loader:DataLoader,
-            val_sample_list:list[dict[str,torch.Tensor]],
+            val_sample_loader:list[dict[str,torch.Tensor]],
             TR_result:dict[str,torch.Tensor],
             **kwargs
         ):
@@ -52,19 +52,21 @@ class TR_GNN_Trainer:
             model.memory.init_memory_state()
             model.last_state.init_last_state()
 
-            ### Epoch마다 train_sample_list 생성
-            train_sample_list=TrainUtils.get_TR_sample_list(
+            ### Epoch마다 train_sample_loader 생성
+            train_sample_loader=TrainUtils.get_TR_sample_loader(
                 source=kwargs["source"],
                 data_loader=train_loader,
                 TR_result=TR_result,
-                sampling=kwargs["sampling"]
+                sampling=kwargs["sampling"],
+                n_sample=kwargs.get("n_sample",200),
+                n_pair=kwargs.get("n_pair",10)
             )
 
             model.train()
             for batch_idx,(batch_event,batch_sample) in enumerate(
                     tqdm(
-                        zip(train_loader,train_sample_list),
-                        total=len(train_sample_list),
+                        zip(train_loader,train_sample_loader),
+                        total=len(train_sample_loader),
                         desc=f"Training epoch {epoch+1}..."
                     )
                 ):
@@ -91,7 +93,7 @@ class TR_GNN_Trainer:
                 query_t=query_t.to(device)
                 label=label.to(device)
 
-                sample_weight=batch_sample["weight"]
+                sample_weight=batch_sample.get("weight",torch.ones_like(label))
                 sample_weight=sample_weight.to(device)
 
                 ### predict of sample
@@ -144,7 +146,7 @@ class TR_GNN_Trainer:
             val_result=TR_GNN_Trainer.validate(
                 model=model,
                 val_loader=val_loader,
-                val_sample_list=val_sample_list,
+                val_sample_loader=val_sample_loader,
                 **kwargs
             )
             val_acc=val_result["acc"]
@@ -164,13 +166,15 @@ class TR_GNN_Trainer:
                     model=pre_model
                     print(f"Early Stop in epoch {epoch+1}")
                     break
+        if kwargs["early_stop"] and early_stop.best_state is not None:
+            model.load_state_dict(early_stop.best_state)
         return model
 
     @staticmethod
     def validate(
             model:nn.Module,
             val_loader:DataLoader,
-            val_sample_list:DataLoader,
+            val_sample_loader:list,
             **kwargs
         ):
         """
@@ -193,8 +197,8 @@ class TR_GNN_Trainer:
         acc_list=[]
         with torch.no_grad():
             for batch_event,batch_sample in tqdm(
-                    zip(val_loader,val_sample_list),
-                    total=len(val_sample_list),
+                    zip(val_loader,val_sample_loader),
+                    total=len(val_sample_loader),
                     desc=f"Validate..."
                 ):
                 ### Update model memory for Eventstream
@@ -269,7 +273,7 @@ class TR_GNN_Trainer:
     def evaluate(
             model:nn.Module,
             test_loader:DataLoader,
-            test_sample_list:list,
+            test_sample_loader:list,
             **kwargs
         ):
         """
@@ -291,8 +295,8 @@ class TR_GNN_Trainer:
         label_list=[]
         with torch.no_grad():
             for batch_event,batch_sample in tqdm(
-                    zip(test_loader,test_sample_list),
-                    total=len(test_sample_list),
+                    zip(test_loader,test_sample_loader),
+                    total=len(test_sample_loader),
                     desc=f"Compute Test Acc..."
                 ):
                 ### Update model memory for Eventstream
@@ -361,7 +365,7 @@ class TR_GNN_Trainer:
     def evaluate_hop_range(
             model:nn.Module,
             test_loader:DataLoader,
-            test_sample_list:list,
+            test_sample_loader:list,
             **kwargs
         ):
         """
@@ -383,8 +387,8 @@ class TR_GNN_Trainer:
         range_label_lists=[[],[],[]]
         with torch.no_grad():
             for batch_event,batch_sample in tqdm(
-                    zip(test_loader,test_sample_list),
-                    total=len(test_sample_list),
+                    zip(test_loader,test_sample_loader),
+                    total=len(test_sample_loader),
                     desc=f"Compute Test Acc..."
                 ):
                 ### Update model memory for Eventstream

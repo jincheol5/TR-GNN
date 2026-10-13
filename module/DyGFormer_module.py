@@ -4,16 +4,8 @@ import torch.nn.functional as F
 from graph import DyGFormer_Graph
 
 class DyGFormer_Module:
-    def __init__(self,
-            n_node:int,
-            graph:DyGFormer_Graph
-        ):
-        self.n_node=n_node
-        self.graph=graph
-        self.node_ft=None
-        self.edge_ft=None
-        if graph is not None:
-            self.set_graph(graph=graph)
+    def __init__(self):
+        pass
 
     def set_graph(self,graph:DyGFormer_Graph):
         self.graph=graph

@@ -5,13 +5,11 @@ from module import TimeEncoder,GraphAttnEmbedding,TR_Decoder
 
 class TGAT(nn.Module):
     def __init__(self,
-            n_node:int,
             node_dim:int,
             edge_dim:int,
             time_dim:int,
             latent_dim:int,
             embed_dim:int,
-            graph:TGN_Graph,
             n_layer:int,
             n_neighbor:int,
             n_head:int
@@ -22,8 +20,6 @@ class TGAT(nn.Module):
         self.time_dim=time_dim
         self.latent_dim=latent_dim
         self.embed_dim=embed_dim
-        self.n_node=n_node
-        self.graph=graph
         self.n_layer=n_layer
         self.n_neighbor=n_neighbor
         self.n_head=n_head
@@ -38,8 +34,6 @@ class TGAT(nn.Module):
             time_dim=time_dim,
             latent_dim=latent_dim,
             embed_dim=embed_dim,
-            n_node=self.n_node,
-            graph=self.graph,
             n_layer=n_layer,
             n_neighbor=n_neighbor,
             n_head=n_head,

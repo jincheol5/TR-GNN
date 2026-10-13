@@ -6,7 +6,6 @@ from module import TimeEncoder,Memory,Last_State,GraphAttnEmbedding,GRUMemoryUpd
 
 class TR_GNN(nn.Module):
     def __init__(self,
-            n_node:int,
             node_dim:int,
             edge_dim:int,
             time_dim:int,
@@ -14,7 +13,6 @@ class TR_GNN(nn.Module):
             msg_dim:int,
             mem_dim:int,
             embed_dim:int,
-            graph:TGN_Graph,
             n_layer:int,
             n_neighbor:int,
             n_head:int,
@@ -35,16 +33,6 @@ class TR_GNN(nn.Module):
         self.n_head=n_head
         self.msg_fn=msg_fn
         self.aggr_fn=aggr_fn
-        
-        # graph
-        self.n_node=n_node
-        self.graph=graph
-
-        # memory
-        self.memory=Memory(n_node=self.n_node,mem_dim=self.mem_dim)
-
-        # last_state
-        self.last_state=Last_State(n_node=self.n_node)
 
         # time encoder
         self.time_encoder=TimeEncoder(time_dim=time_dim)
@@ -56,8 +44,6 @@ class TR_GNN(nn.Module):
             msg_dim=msg_dim,
             time_dim=time_dim,
             time_encoder=self.time_encoder,
-            n_node=self.n_node,
-            graph=self.graph,
             msg_fn=msg_fn,
             aggr_fn=aggr_fn
         )
@@ -70,8 +56,6 @@ class TR_GNN(nn.Module):
             latent_dim=latent_dim,
             mem_dim=mem_dim,
             embed_dim=embed_dim,
-            n_node=self.n_node,
-            graph=self.graph,
             n_layer=n_layer,
             n_neighbor=n_neighbor,
             n_head=n_head,
@@ -93,10 +77,8 @@ class TR_GNN(nn.Module):
         self.n_node=graph.n_node
         self.memory_updater.set_graph(graph=graph)
         self.encoder.set_graph(graph=graph)
-
         # set memory
         self.memory=Memory(n_node=self.n_node,mem_dim=self.mem_dim).to(device)
-
         # set last_state
         self.last_state=Last_State(n_node=self.n_node).to(device)
 
