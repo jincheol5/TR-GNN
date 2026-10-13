@@ -167,23 +167,14 @@ def main(**kwargs):
     graph_loader=DataLoader(dataset=graph_dataset,batch_size=batch_size,shuffle=False)
     _,_,test_loader=TrainUtils.split_data_loader(data_loader=graph_loader)
 
-    ### load TR result
-    test_TR_result=DataUtils.load_SNAP_TR_result(
-        dataset_name=dataset_name,
-        batch_size=batch_size,
-        purpose="test"
-    )
-
     ### Evaluation
     evaluate_type=kwargs["evaluate_type"]
+    test_sample_loader=DataUtils.load_ID_test_sample_loader(
+        dataset_name=dataset_name,
+        source=source,
+        evaluate_type=evaluate_type
+    )
     if evaluate_type=="base":
-        ### set base test_sample_list
-        test_sample_loader=TrainUtils.get_TR_sample_loader(
-            source=source,
-            data_loader=test_loader,
-            TR_result=test_TR_result,
-            sampling=f"base"
-        )
         match model_name:
             case "TGAT"|"TGN"|"DyGFormer":
                 evaluate_result=ModelTrainer.evaluate(
@@ -206,20 +197,12 @@ def main(**kwargs):
                     test_sample_loader=test_sample_loader,
                     **model_config
                 )
-
         print(f"Evaluation 1 Result:")
         print(f"dataset: {dataset_name}")
         print(f"model: {file_name}")
         print(f"ACC: {evaluate_result['acc']}",end="\n\n")
 
     if evaluate_type=="hop_range":
-        ### set hop_range test_sample_list
-        test_sample_loader=TrainUtils.get_TR_sample_loader(
-            source=source,
-            data_loader=test_loader,
-            TR_result=test_TR_result,
-            sampling=f"hop_range"
-        )
         match model_name:
             case "TGAT"|"TGN"|"DyGFormer":
                 evaluate_result=ModelTrainer.evaluate_hop_range(

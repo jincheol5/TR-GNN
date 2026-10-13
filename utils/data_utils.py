@@ -148,6 +148,44 @@ class DataUtils:
         return TR_result
 
     @staticmethod
+    def save_ID_test_sample_loader(
+            test_sample_loader:list[dict[str,torch.Tensor]],
+            dataset_name:Literal[
+                "CollegeMsg",
+                "bitcoin-alpha",
+                "bitcoin-otc"
+            ],
+            source:int,
+            evaluate_type:Literal["base","hop_range"]
+        ):
+        """
+        ID Evaluation을 위한 test TR_sample_loader 저장 
+        """
+        file_name=f"{dataset_name}_SRC{source}_{evaluate_type}.pt"
+        file_path=os.path.join(BASE_PATH,"TR-GNN","ID_test_sample_loader",dataset_name,file_name)
+        os.makedirs(os.path.dirname(file_path),exist_ok=True)
+        torch.save(test_sample_loader,file_path)
+        print(f"Save {file_name}!")
+
+    @staticmethod
+    def load_ID_test_sample_loader(
+            dataset_name:Literal[
+                "CollegeMsg",
+                "bitcoin-alpha",
+                "bitcoin-otc"
+            ],
+            source:int,
+            evaluate_type:Literal["base","hop_range"]
+        )->list[dict[str,torch.Tensor]]:
+        """
+        ID Evaluation을 위한 test TR_sample_loader 로드
+        """
+        file_name=f"{dataset_name}_SRC{source}_{evaluate_type}.pt"
+        file_path=os.path.join(BASE_PATH,"TR-GNN","ID_test_sample_loader",dataset_name,file_name)
+        TR_result=torch.load(file_path)
+        return TR_result
+
+    @staticmethod
     def save_graph_df_list_to_pickle(
             graph_df_list,
             file_name:str,
@@ -205,4 +243,3 @@ class DataUtils:
         file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result",purpose,file_name)
         TR_result_list=torch.load(file_path)
         return TR_result_list
-
