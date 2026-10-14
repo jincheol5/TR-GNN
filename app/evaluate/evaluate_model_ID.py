@@ -232,6 +232,8 @@ def main(**kwargs):
         print(f"Hop Range 2 (3 <= Hop < 5) ACC: {evaluate_result['range_2_acc']}")
         print(f"Hop Range 3 (5 <= Hop) ACC: {evaluate_result['range_3_acc']}")
 
+    return evaluate_result
+
 if __name__=="__main__":
     """
     Execute app
