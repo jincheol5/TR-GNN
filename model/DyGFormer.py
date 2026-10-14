@@ -94,7 +94,8 @@ class DyGFormer(nn.Module):
         self.graph=graph
         self.n_node=graph.n_node
         # set DyGFormer Module
-        self.module=DyGFormer_Module(n_node=self.n_node,graph=graph).to(device)
+        self.module=DyGFormer_Module()
+        self.module.set_graph(graph=graph)
 
     def forward(self,
             src:torch.Tensor,
