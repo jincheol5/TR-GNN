@@ -198,6 +198,8 @@ def main(**kwargs):
     print(f"dataset: {dataset_name}")
     print(f"model: {file_name}")
     print(f"ACC: {evaluate_result['acc']}")
+    print(f"PPR: {evaluate_result['ppr']}")
+    print(f"Prediction Bias: {evaluate_result['pb']}")
     print(f"Hop Range 1 (1 <= Hop < 3) ACC: {evaluate_result['range_1_acc']}")
     print(f"Hop Range 2 (3 <= Hop < 5) ACC: {evaluate_result['range_2_acc']}")
     print(f"Hop Range 3 (5 <= Hop) ACC: {evaluate_result['range_3_acc']}")

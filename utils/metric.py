@@ -51,51 +51,38 @@ class Metric:
             )
         return result
 
-    # @staticmethod
-    # def compute_hop_range_accuracy_old(
-    #         pred_logit:torch.Tensor,
-    #         label:torch.Tensor,
-    #         hop_range_1_mask:torch.Tensor,
-    #         hop_range_2_mask:torch.Tensor,
-    #         hop_range_3_mask:torch.Tensor
-    #     ):
-    #     """
-    #     Input:
-    #         pred_logit
-    #         label
-    #         pos_mask
-    #         hop_range_1_mask
-    #         hop_range_2_mask
-    #         hop_range_3_mask
-    #     Return:
-    #         acc
-    #         hop_range_1_acc
-    #         hop_range_2_acc
-    #         hop_range_3_acc
-    #     """
-    #     pred=(torch.sigmoid(pred_logit)>=0.5).float()
-    #     acc=(pred==label.float()).float().mean().item()
+    @staticmethod
+    def compute_PPR(
+            pred_logit:torch.Tensor
+        ):
+        """
+        PPR (Prediction Positive Rate)
+        -> 전체 예측 중 Positive로 분류한 비율
 
-    #     ### range 1 accuracy
-    #     if hop_range_1_mask.any():
-    #         hop_range_1_acc=(pred[hop_range_1_mask]==label[hop_range_1_mask]).float().mean().item()
-    #     else:
-    #         hop_range_1_acc=0.0
+        0%: 모든 샘플을 Negative로 예측
+        20%: Negative 예측에 치우침
+        50%: Positive와 Negative를 같은 비율로 예측
+        80%: Positive 예측에 치우침
+        100%: 모든 샘플을 Positive로 예측
+        """
+        # Return a fraction in [0, 1], consistent with compute_accuracy.
+        pred=(torch.sigmoid(pred_logit)>=0.5).float()
+        return pred.mean().item()
 
-    #     ### range 2 accuracy
-    #     if hop_range_2_mask.any():
-    #         hop_range_2_acc=(pred[hop_range_2_mask]==label[hop_range_2_mask]).float().mean().item()
-    #     else:
-    #         hop_range_2_acc=0.0
+    @staticmethod
+    def compute_Prediction_Bias(
+            pred_logit:torch.Tensor,
+            label:torch.Tensor
+        ):
+        """
+        Prediction Bias
+        -> 실제 Positive 비율과 예측 Positive 비율의 차이를 계산
 
-    #     ### range 3 accuracy
-    #     if hop_range_3_mask.any():
-    #         hop_range_3_acc=(pred[hop_range_3_mask]==label[hop_range_3_mask]).float().mean().item()
-    #     else:
-    #         hop_range_3_acc=0.0
-    #     return {
-    #         "acc":acc,
-    #         "hop_range_1_acc":hop_range_1_acc,
-    #         "hop_range_2_acc":hop_range_2_acc,
-    #         "hop_range_3_acc":hop_range_3_acc
-    #     }
+        Bias = 0: 예측 클래스 비율이 실제 비율과 일치
+        Bias > 0: Positive를 과도하게 예측
+        Bias < 0: Negative를 과도하게 예측
+        """
+        # Signed difference in positive rates, in [-1, 1].
+        predicted_positive_rate=Metric.compute_PPR(pred_logit=pred_logit)
+        actual_positive_rate=(label==1).float().mean().item()
+        return predicted_positive_rate-actual_positive_rate
