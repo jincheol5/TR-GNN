@@ -22,43 +22,14 @@ def main(**kwargs):
     n_layer=1
     n_neighbor=10
     n_head=4
-    sampling=kwargs["sampling"]
-
-    ### TGN 하이퍼 파라미터
     msg_fn=f"mlp"
     aggr_fn=f"mean"
-
-    ### DyGFormer 하이퍼 파라미터
-    co_dim=32
-    common_dim=32
-    max_history_len=10
-    patch_size=5
+    sampling=kwargs["sampling"]
 
     ### 평가 관련 파라미터
     batch_size=200
     lr=kwargs["lr"]
     source=kwargs["source"]
-
-    ### set model_config
-    model_config={
-        # 모델 공동 하이퍼 파라미터
-        "model_name":kwargs["model_name"],
-        "time_dim":time_dim,
-        "latent_dim":latent_dim,
-        "embed_dim":embed_dim,
-        "n_layer":n_layer,
-        "n_neighbor":n_neighbor,
-        "n_head":n_head,
-
-        # DyGFormer 하이퍼 파라미터
-        "co_dim":co_dim,
-        "common_dim":common_dim,
-        "max_history_len":max_history_len,
-        "patch_size":patch_size,
-
-        # 평가 관련 파라미터
-        "source":source
-    }
 
     ### set dataset
     dataset_name=kwargs["dataset_name"]
@@ -106,6 +77,11 @@ def main(**kwargs):
                 aggr_fn=aggr_fn
             )
         case "DyGFormer":
+            ### DyGFormer 하이퍼 파라미터
+            co_dim=32
+            common_dim=32
+            max_history_len=10
+            patch_size=5
             model=DyGFormer(
                 node_dim=node_dim,
                 edge_dim=edge_dim,
@@ -162,16 +138,22 @@ def main(**kwargs):
         dataset_name=dataset_name
     )
 
-    ### set data_loader
+    ### set model_config
+    model_config={
+        "model_name":kwargs["model_name"],
+        "source":source
+    }
+
+    ### set test_loader, test_sample_loader
     graph_dataset=TemporalGraphDataset(df=graph_df)
     graph_loader=DataLoader(dataset=graph_dataset,batch_size=batch_size,shuffle=False)
     _,_,test_loader=TrainUtils.split_data_loader(data_loader=graph_loader)
-
-    ### Evaluation
     test_sample_loader=DataUtils.load_ID_test_sample_loader(
         dataset_name=dataset_name,
         source=source
     )
+
+    ### Evaluation
     match model_name:
         case "TGAT"|"TGN"|"DyGFormer":
             evaluate_result=ModelTrainer.evaluate_hop_range(
