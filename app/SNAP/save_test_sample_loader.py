@@ -6,7 +6,6 @@ def main(**kwargs):
     dataset_name=kwargs["dataset_name"]
     source=kwargs["source"]
     batch_size=kwargs["batch_size"]
-    evaluate_type=kwargs["evaluate_type"]
 
     ### set test_sample_loader
     dataset_name=kwargs["dataset_name"]
@@ -24,15 +23,14 @@ def main(**kwargs):
         source=source,
         data_loader=test_loader,
         TR_result=test_TR_result,
-        sampling=evaluate_type
+        sampling=f"evaluate"
     )
 
     ### save test_sample_loader
     DataUtils.save_ID_test_sample_loader(
         test_sample_loader=test_sample_loader,
         dataset_name=dataset_name,
-        source=source,
-        evaluate_type=evaluate_type
+        source=source
     )
 
 if __name__=="__main__":
@@ -51,12 +49,10 @@ if __name__=="__main__":
     )
     parser.add_argument("--source",type=int,default=1)
     parser.add_argument("--batch_size",type=int,default=200)
-    parser.add_argument("--evaluate_type",choices=["base","hop_range"],default="base")
     args=parser.parse_args()
     app_config={
         "dataset_name":args.dataset_name,
         "source":args.source,
-        "batch_size":args.batch_size,
-        "evaluate_type":args.evaluate_type
+        "batch_size":args.batch_size
     }
     main(**app_config)

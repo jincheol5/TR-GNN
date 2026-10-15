@@ -202,7 +202,7 @@ class TrainUtils:
             source:int,
             data_loader:DataLoader,
             TR_result:dict[str,torch.Tensor]|None=None,
-            sampling:Literal["random","focused","base","hop_range"]=f"focused",
+            sampling:Literal["random","focused","evaluate"]=f"focused",
             n_sample:int=200,
             n_pair:int=10
         )->list[dict[str,torch.Tensor]]:
@@ -238,16 +238,9 @@ class TrainUtils:
                         query_time=query_time,
                         TR_label=TR_label[batch_idx]
                     )
-                case "base":
-                    TR_sample=SamplingUtils.source_focused_base_TR_sampling(
+                case "evaluate":
+                    TR_sample=SamplingUtils.evaluate_TR_sampling(
                         n_sample=200,
-                        source=source,
-                        query_time=query_time,
-                        TR_label=TR_label[batch_idx]
-                    )
-                case "hop_range":
-                    TR_sample=SamplingUtils.source_focused_hop_range_TR_sampling(
-                        n_sample=300,
                         source=source,
                         query_time=query_time,
                         TR_label=TR_label[batch_idx],
@@ -342,7 +335,7 @@ class TrainUtils:
         sample_loader_list=[]
         for graph_loader,TR_result in zip(graph_loader_list,TR_result_list):
             source=random.randint(1,n_node)
-            sample_loader=TrainUtils.get_TR_sample_list(
+            sample_loader=TrainUtils.get_TR_sample_loader(
                 source=source,
                 data_loader=graph_loader,
                 TR_result=TR_result,

@@ -370,7 +370,7 @@ class ReaCH_TGN_Trainer:
 
     @staticmethod
     def evaluate_hop_range(
-            model:nn.Module,
+            model:ReaCH_TGN,
             test_loader:DataLoader,
             test_sample_loader:list,
             **kwargs
@@ -390,8 +390,9 @@ class ReaCH_TGN_Trainer:
         """
         compute test acc
         """
-        range_pred_logit_lists=[[],[],[]]
-        range_label_lists=[[],[],[]]
+        pred_logit_list=[]
+        label_list=[]
+        hop_list=[]
         with torch.no_grad():
             for batch_event,batch_sample in tqdm(
                     zip(test_loader,test_sample_loader),
@@ -416,16 +417,12 @@ class ReaCH_TGN_Trainer:
                 dst=batch_sample["dst"]
                 query_t=batch_sample["query_t"]
                 label=batch_sample["label"]
-                range_1_mask=batch_sample["range_1_mask"]
-                range_2_mask=batch_sample["range_2_mask"]
-                range_3_mask=batch_sample["range_3_mask"]
+                hop=batch_sample["hop"]
                 src=src.to(device)
                 dst=dst.to(device)
                 query_t=query_t.to(device)
                 label=label.to(device)
-                range_1_mask=range_1_mask.to(device)
-                range_2_mask=range_2_mask.to(device)
-                range_3_mask=range_3_mask.to(device)
+                hop=hop.to(device)
 
                 pred_logit=model(
                     src=src,
@@ -434,18 +431,20 @@ class ReaCH_TGN_Trainer:
                 ) # [n_sample,1]
                 pred_logit=pred_logit.squeeze(-1) # [n_sample,]
 
-                ### Collect predictions and labels for each range
-                for range_idx,range_mask in enumerate((range_1_mask,range_2_mask,range_3_mask)):
-                    if range_mask.any():
-                        range_pred_logit_lists[range_idx].append(pred_logit[range_mask].cpu())
-                        range_label_lists[range_idx].append(label[range_mask].cpu())
-        ### Compute accuracy over all samples in each range
+                ### Collect all samples for positive-only hop range accuracy
+                pred_logit_list.append(pred_logit.cpu())
+                label_list.append(label.cpu())
+                hop_list.append(hop.cpu())
+
+        ### Compute accuracy across all batches, weighted by sample count
+        result=Metric.compute_hop_range_accuracy(
+            pred_logit=torch.cat(pred_logit_list,dim=0),
+            label=torch.cat(label_list,dim=0),
+            hop=torch.cat(hop_list,dim=0)
+        )
         return {
-            f"range_{range_idx+1}_acc":Metric.compute_accuracy(
-                pred_logit=torch.cat(pred_logit_list,dim=0),
-                label=torch.cat(label_list,dim=0)
-            ) if pred_logit_list else 0.0
-            for range_idx,(pred_logit_list,label_list) in enumerate(
-                zip(range_pred_logit_lists,range_label_lists)
-            )
+            "acc":result["acc"],
+            "range_1_acc":result["hop_range_1_acc"],
+            "range_2_acc":result["hop_range_2_acc"],
+            "range_3_acc":result["hop_range_3_acc"]
         }

@@ -155,13 +155,12 @@ class DataUtils:
                 "bitcoin-alpha",
                 "bitcoin-otc"
             ],
-            source:int,
-            evaluate_type:Literal["base","hop_range"]
+            source:int
         ):
         """
         ID Evaluation을 위한 test TR_sample_loader 저장 
         """
-        file_name=f"{dataset_name}_SRC{source}_{evaluate_type}.pt"
+        file_name=f"{dataset_name}_SRC{source}.pt"
         file_path=os.path.join(BASE_PATH,"TR-GNN","ID_test_sample_loader",dataset_name,file_name)
         os.makedirs(os.path.dirname(file_path),exist_ok=True)
         torch.save(test_sample_loader,file_path)
@@ -174,13 +173,12 @@ class DataUtils:
                 "bitcoin-alpha",
                 "bitcoin-otc"
             ],
-            source:int,
-            evaluate_type:Literal["base","hop_range"]
+            source:int
         )->list[dict[str,torch.Tensor]]:
         """
         ID Evaluation을 위한 test TR_sample_loader 로드
         """
-        file_name=f"{dataset_name}_SRC{source}_{evaluate_type}.pt"
+        file_name=f"{dataset_name}_SRC{source}.pt"
         file_path=os.path.join(BASE_PATH,"TR-GNN","ID_test_sample_loader",dataset_name,file_name)
         TR_result=torch.load(file_path)
         return TR_result

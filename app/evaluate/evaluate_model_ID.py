@@ -168,69 +168,39 @@ def main(**kwargs):
     _,_,test_loader=TrainUtils.split_data_loader(data_loader=graph_loader)
 
     ### Evaluation
-    evaluate_type=kwargs["evaluate_type"]
     test_sample_loader=DataUtils.load_ID_test_sample_loader(
         dataset_name=dataset_name,
-        source=source,
-        evaluate_type=evaluate_type
+        source=source
     )
-    if evaluate_type=="base":
-        match model_name:
-            case "TGAT"|"TGN"|"DyGFormer":
-                evaluate_result=ModelTrainer.evaluate(
-                    model=model,
-                    test_loader=test_loader,
-                    test_sample_loader=test_sample_loader,
-                    **model_config
-                )
-            case "ReaCH-TGN":
-                evaluate_result=ReaCH_TGN_Trainer.evaluate(
-                    model=model,
-                    test_loader=test_loader,
-                    test_sample_loader=test_sample_loader,
-                    **model_config
-                )
-            case "TR-GNN":
-                evaluate_result=TR_GNN_Trainer.evaluate(
-                    model=model,
-                    test_loader=test_loader,
-                    test_sample_loader=test_sample_loader,
-                    **model_config
-                )
-        print(f"Evaluation 1 Result:")
-        print(f"dataset: {dataset_name}")
-        print(f"model: {file_name}")
-        print(f"ACC: {evaluate_result['acc']}",end="\n\n")
-
-    if evaluate_type=="hop_range":
-        match model_name:
-            case "TGAT"|"TGN"|"DyGFormer":
-                evaluate_result=ModelTrainer.evaluate_hop_range(
-                    model=model,
-                    test_loader=test_loader,
-                    test_sample_loader=test_sample_loader,
-                    **model_config
-                )
-            case "ReaCH-TGN":
-                evaluate_result=ReaCH_TGN_Trainer.evaluate_hop_range(
-                    model=model,
-                    test_loader=test_loader,
-                    test_sample_loader=test_sample_loader,
-                    **model_config
-                )
-            case "TR-GNN":
-                evaluate_result=TR_GNN_Trainer.evaluate_hop_range(
-                    model=model,
-                    test_loader=test_loader,
-                    test_sample_loader=test_sample_loader,
-                    **model_config
-                )
-        print(f"Evaluation 2 Result:")
-        print(f"dataset: {dataset_name}")
-        print(f"model: {file_name}")
-        print(f"Hop Range 1 (1 <= Hop < 3) ACC: {evaluate_result['range_1_acc']}")
-        print(f"Hop Range 2 (3 <= Hop < 5) ACC: {evaluate_result['range_2_acc']}")
-        print(f"Hop Range 3 (5 <= Hop) ACC: {evaluate_result['range_3_acc']}")
+    match model_name:
+        case "TGAT"|"TGN"|"DyGFormer":
+            evaluate_result=ModelTrainer.evaluate_hop_range(
+                model=model,
+                test_loader=test_loader,
+                test_sample_loader=test_sample_loader,
+                **model_config
+            )
+        case "ReaCH-TGN":
+            evaluate_result=ReaCH_TGN_Trainer.evaluate_hop_range(
+                model=model,
+                test_loader=test_loader,
+                test_sample_loader=test_sample_loader,
+                **model_config
+            )
+        case "TR-GNN":
+            evaluate_result=TR_GNN_Trainer.evaluate_hop_range(
+                model=model,
+                test_loader=test_loader,
+                test_sample_loader=test_sample_loader,
+                **model_config
+            )
+    print(f"Evaluation Result:")
+    print(f"dataset: {dataset_name}")
+    print(f"model: {file_name}")
+    print(f"ACC: {evaluate_result['acc']}")
+    print(f"Hop Range 1 (1 <= Hop < 3) ACC: {evaluate_result['range_1_acc']}")
+    print(f"Hop Range 2 (3 <= Hop < 5) ACC: {evaluate_result['range_2_acc']}")
+    print(f"Hop Range 3 (5 <= Hop) ACC: {evaluate_result['range_3_acc']}")
 
     return evaluate_result
 
@@ -264,7 +234,6 @@ if __name__=="__main__":
         ],
         default="focused"
     )
-    parser.add_argument("--evaluate_type",choices=["base","hop_range"],default="base")
     args=parser.parse_args()
     app_config={
         "model_name":args.model_name,
@@ -272,7 +241,6 @@ if __name__=="__main__":
         "lr":args.lr,
         "dataset_name":args.dataset_name,
         "source":args.source,
-        "sampling":args.sampling,
-        "evaluate_type":args.evaluate_type
+        "sampling":args.sampling
     }
     main(**app_config)
