@@ -377,5 +377,7 @@ class ModelTrainer:
             "range_2_acc":result["hop_range_2_acc"],
             "range_3_acc":result["hop_range_3_acc"],
             "ppr":Metric.compute_PPR(pred_logit=pred_logit),
-            "pb":Metric.compute_Prediction_Bias(pred_logit=pred_logit,label=label)
+            "pb":Metric.compute_Prediction_Bias(pred_logit=pred_logit,label=label),
+            "pos_recall":Metric.compute_pos_recall(pred_logit=pred_logit,label=label),
+            "neg_recall":Metric.compute_neg_recall(pred_logit=pred_logit,label=label)
         }

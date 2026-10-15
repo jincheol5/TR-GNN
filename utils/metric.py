@@ -52,6 +52,36 @@ class Metric:
         return result
 
     @staticmethod
+    def compute_pos_recall(
+            pred_logit:torch.Tensor,
+            label:torch.Tensor
+        ):
+        """
+        Return TP / (TP + FN) as a float in [0, 1].
+        Return 0.0 if there are no positive labels.
+        """
+        positive_mask=(label==1)
+        if not positive_mask.any():
+            return 0.0
+        pred=(torch.sigmoid(pred_logit)>=0.5)
+        return pred[positive_mask].float().mean().item()
+
+    @staticmethod
+    def compute_neg_recall(
+            pred_logit:torch.Tensor,
+            label:torch.Tensor
+        ):
+        """
+        Return TN / (TN + FP) as a float in [0, 1].
+        Return 0.0 if there are no negative labels.
+        """
+        negative_mask=(label==0)
+        if not negative_mask.any():
+            return 0.0
+        pred=(torch.sigmoid(pred_logit)>=0.5)
+        return (~pred[negative_mask]).float().mean().item()
+
+    @staticmethod
     def compute_PPR(
             pred_logit:torch.Tensor
         ):

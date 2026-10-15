@@ -1,4 +1,5 @@
 import argparse
+from decimal import Decimal, ROUND_DOWN
 from statistics import mean
 from torch.utils.data import DataLoader
 from utils import DataUtils,TrainUtils,ModelUtils,TemporalGraphDataset
@@ -51,10 +52,11 @@ def main(**kwargs):
     """
     Evaluate model
     """
+    metric_names=("acc","ppr","pb","range_1_acc","range_2_acc","range_3_acc","pos_recall","neg_recall")
     model_averages={}
     for model_name in model_name_list:
         sampling_scores={
-            sampling:{"base_acc":[], "range_1_acc":[], "range_2_acc":[], "range_3_acc":[]}
+            sampling:{metric:[] for metric in metric_names}
             for sampling in sampling_list
             if not (model_name=="TR-GNN" and sampling=="random")
         }
@@ -172,15 +174,9 @@ def main(**kwargs):
                         )
 
                         ### set test sample_loader
-                        base_test_sample_loader=DataUtils.load_ID_test_sample_loader(
+                        test_sample_loader=DataUtils.load_ID_test_sample_loader(
                             dataset_name=dataset_name,
-                            source=source,
-                            evaluate_type=f"base"
-                        )
-                        hop_range_test_sample_loader=DataUtils.load_ID_test_sample_loader(
-                            dataset_name=dataset_name,
-                            source=source,
-                            evaluate_type=f"hop_range"
+                            source=source
                         )
 
                         ### set model_config
@@ -189,83 +185,53 @@ def main(**kwargs):
                             "source":source
                         }
 
-                        ### evaluate base
-                        match model_name:
-                            case "TGAT"|"TGN"|"DyGFormer":
-                                evaluate_result=ModelTrainer.evaluate(
-                                    model=model,
-                                    test_loader=test_loader,
-                                    test_sample_loader=base_test_sample_loader,
-                                    **model_config
-                                )
-                            case "ReaCH-TGN":
-                                evaluate_result=ReaCH_TGN_Trainer.evaluate(
-                                    model=model,
-                                    test_loader=test_loader,
-                                    test_sample_loader=base_test_sample_loader,
-                                    **model_config
-                                )
-                            case "TR-GNN":
-                                evaluate_result=TR_GNN_Trainer.evaluate(
-                                    model=model,
-                                    test_loader=test_loader,
-                                    test_sample_loader=base_test_sample_loader,
-                                    **model_config
-                                )
-                        base_acc=evaluate_result['acc']
-
-                        ### evaluate hop_range
+                        ### evaluate 
                         match model_name:
                             case "TGAT"|"TGN"|"DyGFormer":
                                 evaluate_result=ModelTrainer.evaluate_hop_range(
                                     model=model,
                                     test_loader=test_loader,
-                                    test_sample_loader=hop_range_test_sample_loader,
+                                    test_sample_loader=test_sample_loader,
                                     **model_config
                                 )
                             case "ReaCH-TGN":
                                 evaluate_result=ReaCH_TGN_Trainer.evaluate_hop_range(
                                     model=model,
                                     test_loader=test_loader,
-                                    test_sample_loader=hop_range_test_sample_loader,
+                                    test_sample_loader=test_sample_loader,
                                     **model_config
                                 )
                             case "TR-GNN":
                                 evaluate_result=TR_GNN_Trainer.evaluate_hop_range(
                                     model=model,
                                     test_loader=test_loader,
-                                    test_sample_loader=hop_range_test_sample_loader,
+                                    test_sample_loader=test_sample_loader,
                                     **model_config
                                 )
-                        range_1_acc=evaluate_result['range_1_acc']
-                        range_2_acc=evaluate_result['range_2_acc']
-                        range_3_acc=evaluate_result['range_3_acc']
                         scores=sampling_scores[sampling]
-                        for metric,value in zip(scores,(base_acc,range_1_acc,range_2_acc,range_3_acc)):
-                            scores[metric].append(float(value))
+                        for metric in metric_names:
+                            value=float(evaluate_result[metric])
+                            scores[metric].append(abs(value) if metric=="pb" else value)
 
         model_averages[model_name]={}
         for sampling,scores in sampling_scores.items():
             result={metric:mean(values) for metric,values in scores.items()}
-            result["n_runs"]=len(scores["base_acc"])
+            result["n_runs"]=len(scores["acc"])
             model_averages[model_name][sampling]=result
 
-    print(f"\n{dataset_name}: mean accuracy over source, seed and lr")
-    print("\nBase evaluation")
-    print(f"{'Model':<14} {'Sampling':<10} {'Runs':>5} {'base_acc':>12}")
-    for model_name,sampling_results in model_averages.items():
-        for sampling,result in sampling_results.items():
-            print(f"{model_name:<14} {sampling:<10} {result['n_runs']:>5} {result['base_acc']:>12.6f}")
-
-    print("\nHop range evaluation")
-    print(f"{'Model':<14} {'Sampling':<10} {'Runs':>5} {'range_1_acc':>12} {'range_2_acc':>12} {'range_3_acc':>12}")
-    for model_name,sampling_results in model_averages.items():
-        for sampling,result in sampling_results.items():
-            print(
-                f"{model_name:<14} {sampling:<10} {result['n_runs']:>5} "
-                f"{result['range_1_acc']:>12.6f} "
-                f"{result['range_2_acc']:>12.6f} {result['range_3_acc']:>12.6f}"
+    metric_header=" ".join(f"{metric:>12}" for metric in metric_names)
+    for sampling in sampling_list:
+        print(f"\nEvaluation ({sampling})")
+        print(f"{'Model':<14} {'Runs':>5} {metric_header}")
+        for model_name,sampling_results in model_averages.items():
+            if sampling not in sampling_results:
+                continue
+            result=sampling_results[sampling]
+            metric_values=" ".join(
+                f"{str((Decimal(str(result[metric]))*100).quantize(Decimal('0.01'),rounding=ROUND_DOWN))+'%':>12}"
+                for metric in metric_names
             )
+            print(f"{model_name:<14} {result['n_runs']:>5} {metric_values}")
     return model_averages
 
 if __name__=="__main__":
