@@ -56,6 +56,15 @@ class ModelUtils:
         ):
         file_name=file_name+".pt"
         file_path=os.path.join(BASE_PATH,f"OOD",file_name)
-        model.load_state_dict(torch.load(file_path))
+        state_dict=torch.load(file_path,map_location="cpu")
+        runtime_prefixes=("memory.","last_state.")
+        for key in list(state_dict):
+            if key.startswith(runtime_prefixes):
+                del state_dict[key]
+        # Keep existing runtime states, if set_graph() has already created them.
+        for key,value in model.state_dict().items():
+            if key.startswith(runtime_prefixes):
+                state_dict[key]=value
+        model.load_state_dict(state_dict)
         print(f"Load {file_name} model parameter!")
         return model
