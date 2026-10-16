@@ -177,11 +177,7 @@ class ModelTrainer_OOD:
                 pred_logit_list=[]
                 label_list=[]
                 graph_sample_count=0
-                for batch_event,batch_sample in tqdm(
-                        zip(val_loader,val_sample_loader),
-                        total=len(val_sample_loader),
-                        desc="Validate each graph..."
-                    ):
+                for batch_event,batch_sample in zip(val_loader,val_sample_loader):
                     event_src,event_dst,event_t,event_edge=batch_event
                     if kwargs["model_name"] == "TGN":
                         model.update_model_memory(
@@ -247,11 +243,7 @@ class ModelTrainer_OOD:
 
                 pred_logit_list=[]
                 label_list=[]
-                for batch_event,batch_sample in tqdm(
-                        zip(test_loader,test_sample_loader),
-                        total=len(test_sample_loader),
-                        desc="Evaluate each graph..."
-                    ):
+                for batch_event,batch_sample in zip(test_loader,test_sample_loader):
                     event_src,event_dst,event_t,event_edge=batch_event
                     if kwargs["model_name"]=="TGN":
                         model.update_model_memory(
