@@ -13,6 +13,17 @@ class GraphUtils:
         graph.remove_edges_from(nx.selfloop_edges(graph))
 
     @staticmethod
+    def connect_isolated_nodes(graph:nx.Graph):
+        """
+        Connect isolated nodes to another node without changing the node set.
+        """
+        nodes=list(graph.nodes())
+        for node in list(nx.isolates(graph)):
+            if graph.degree(node)==0:
+                neighbor=random.choice([other for other in nodes if other!=node])
+                graph.add_edge(node,neighbor)
+
+    @staticmethod
     def to_directed_graph(graph:nx.Graph)->nx.DiGraph:
         """
         undirected graph의 edge를 두 방향중 랜덤 한 방향만 설정
@@ -165,7 +176,7 @@ class GraphGenerator:
                 raise ValueError(f"ladder graph requires an even number of nodes.")
             ladder_graph=nx.ladder_graph(n_node//2)
             GraphUtils.remove_self_loop(graph=ladder_graph)
-            GraphUtils.to_directed_graph(graph=ladder_graph)
+            ladder_graph=GraphUtils.to_directed_graph(graph=ladder_graph)
             GraphUtils.set_edge_timestamp_uniformly(graph=ladder_graph)
             ladder_graph_list.append(ladder_graph)
 
@@ -175,14 +186,14 @@ class GraphGenerator:
             grid_graph=nx.convert_node_labels_to_integers(grid_graph)
             grid_graph=grid_graph.subgraph(range(n_node)).copy()
             GraphUtils.remove_self_loop(graph=grid_graph)
-            GraphUtils.to_directed_graph(graph=grid_graph)
+            grid_graph=GraphUtils.to_directed_graph(graph=grid_graph)
             GraphUtils.set_edge_timestamp_uniformly(graph=grid_graph)
             grid_graph_list.append(grid_graph)
 
             # 3. generate tree graph
             tree_graph=nx.random_labeled_tree(n_node)
             GraphUtils.remove_self_loop(graph=tree_graph)
-            GraphUtils.to_directed_graph(graph=tree_graph)
+            tree_graph=GraphUtils.to_directed_graph(graph=tree_graph)
             GraphUtils.set_edge_timestamp_uniformly(graph=tree_graph)
             tree_graph_list.append(tree_graph)
 
@@ -190,7 +201,8 @@ class GraphGenerator:
             p=min(np.log2(n_node)/n_node,0.5)
             erdos_renyi_graph=nx.erdos_renyi_graph(n_node,p)
             GraphUtils.remove_self_loop(graph=erdos_renyi_graph)
-            GraphUtils.to_directed_graph(graph=erdos_renyi_graph)
+            GraphUtils.connect_isolated_nodes(graph=erdos_renyi_graph)
+            erdos_renyi_graph=GraphUtils.to_directed_graph(graph=erdos_renyi_graph)
             GraphUtils.set_edge_timestamp_uniformly(graph=erdos_renyi_graph)
             erdos_renyi_graph_list.append(erdos_renyi_graph)
 
@@ -200,7 +212,7 @@ class GraphGenerator:
             m=random.choice([4,5])
             barabasi_albert_graph=nx.barabasi_albert_graph(n_node,m)
             GraphUtils.remove_self_loop(graph=barabasi_albert_graph)
-            GraphUtils.to_directed_graph(graph=barabasi_albert_graph)
+            barabasi_albert_graph=GraphUtils.to_directed_graph(graph=barabasi_albert_graph)
             GraphUtils.set_edge_timestamp_uniformly(graph=barabasi_albert_graph)
             barabasi_albert_graph_list.append(barabasi_albert_graph)
 
@@ -220,7 +232,8 @@ class GraphGenerator:
                         if random.random()<0.01:
                             community_graph.add_edge(i,j)
             GraphUtils.remove_self_loop(graph=community_graph)
-            GraphUtils.to_directed_graph(graph=community_graph)
+            GraphUtils.connect_isolated_nodes(graph=community_graph)
+            community_graph=GraphUtils.to_directed_graph(graph=community_graph)
             GraphUtils.set_edge_timestamp_uniformly(graph=community_graph)
             community_graph_list.append(community_graph)
 
@@ -240,7 +253,8 @@ class GraphGenerator:
                 if not caveman_graph.has_edge(u,v):
                     caveman_graph.add_edge(u,v)
             GraphUtils.remove_self_loop(graph=caveman_graph)
-            GraphUtils.to_directed_graph(graph=caveman_graph)
+            GraphUtils.connect_isolated_nodes(graph=caveman_graph)
+            caveman_graph=GraphUtils.to_directed_graph(graph=caveman_graph)
             GraphUtils.set_edge_timestamp_uniformly(graph=caveman_graph)
             caveman_graph_list.append(caveman_graph)
         return {
