@@ -218,10 +218,7 @@ class TrainUtils:
         TR_label=TR_result["label"]
         TR_hop=TR_result["hop"]
         TR_sample_loader=[]
-        for batch_idx,(_,dst,event_t,_) in tqdm(
-                enumerate(data_loader),
-                desc="Generating TR samples..."
-            ):
+        for batch_idx,(_,dst,event_t,_) in enumerate(data_loader):
             query_time=event_t.max().item()
             match sampling:
                 case "random":

@@ -63,11 +63,7 @@ class ReaCH_TGN_Trainer_OOD:
                 model.set_graph(graph=train_graph)
                 TR_hop=TR_result["hop"]
                 TR_first_t=TR_result["first_t"]
-                for batch_idx,(batch_event,batch_sample) in tqdm(
-                        enumerate(zip(train_loader,train_sample_loader)),
-                        total=len(train_sample_loader),
-                        desc=f"Training epoch {epoch+1}..."
-                    ):
+                for batch_idx,(batch_event,batch_sample) in enumerate(zip(train_loader,train_sample_loader)):
                     ### Eventstream
                     event_src,event_dst,event_t,event_edge=batch_event
                     event_src=event_src.to(device)

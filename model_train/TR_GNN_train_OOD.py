@@ -61,13 +61,7 @@ class TR_GNN_Trainer_OOD:
                     desc=f"Training epoch {epoch+1} (OOD)..."
                 ):
                 model.set_graph(graph=train_graph)
-                for batch_idx,(batch_event,batch_sample) in enumerate(
-                        tqdm(
-                            zip(train_loader,train_sample_loader),
-                            total=len(train_sample_loader),
-                            desc=f"Training epoch {epoch+1}..."
-                        )
-                    ):
+                for batch_idx,(batch_event,batch_sample) in enumerate(zip(train_loader,train_sample_loader)):
                     ### Update model memory for Eventstream
                     event_src,event_dst,event_t,event_edge=batch_event
                     event_src=event_src.to(device)

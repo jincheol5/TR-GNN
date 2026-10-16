@@ -63,11 +63,7 @@ class ModelTrainer_OOD:
                 ):
                 model.set_graph(graph=train_graph)
 
-                for batch_event,batch_sample in tqdm(
-                        zip(train_loader,train_sample_loader),
-                        total=len(train_sample_loader),
-                        desc=f"Train each graph..."
-                    ):
+                for batch_event,batch_sample in zip(train_loader,train_sample_loader):
                     ### Update model memory for Eventstream
                     event_src,event_dst,event_t,event_edge=batch_event
                     if kwargs["model_name"] in ("TGN"):
