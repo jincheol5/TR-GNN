@@ -27,7 +27,6 @@ class TR_GNN_Trainer_OOD:
         else:
             device=torch.device("cpu")
         model=model.to(device)
-        model.graph.to_device(device=device)
 
         if kwargs["optimizer"]=="adam":
             optimizer=torch.optim.Adam(
@@ -151,7 +150,7 @@ class TR_GNN_Trainer_OOD:
                 **kwargs
             )
             val_acc=val_result["acc"]
-            print(f"Validate ACC using {kwargs['sampling']} TR Sampling: {val_acc}")
+            print(f"Validate ACC: {val_acc}")
 
             """
             Check Early Stop
@@ -167,6 +166,8 @@ class TR_GNN_Trainer_OOD:
                     model=pre_model
                     print(f"Early Stop in epoch {epoch+1}")
                     break
+        if kwargs["early_stop"] and early_stop.best_state is not None:
+            model.load_state_dict(early_stop.best_state)
         return model
 
     @staticmethod
@@ -187,12 +188,11 @@ class TR_GNN_Trainer_OOD:
         else:
             device=torch.device("cpu")
         model.to(device)
-        model.graph.to_device(device=device)
         model.eval()
 
         loss_list=[]
         acc_list=[]
-        criterion=nn.BCEWithLogitsLoss()
+        criterion=nn.BCEWithLogitsLoss(reduction="sum")
         with torch.no_grad():
             for val_graph,val_loader,val_sample_loader in tqdm(
                     zip(val_graph_list,val_loader_list,val_sample_loader_list),
@@ -202,7 +202,9 @@ class TR_GNN_Trainer_OOD:
                 model.set_graph(graph=val_graph)
 
                 graph_loss_list=[]
-                graph_acc_list=[]
+                pred_logit_list=[]
+                label_list=[]
+                graph_sample_count=0
                 for batch_event,batch_sample in tqdm(
                         zip(val_loader,val_sample_loader),
                         total=len(val_sample_loader),
@@ -231,10 +233,9 @@ class TR_GNN_Trainer_OOD:
                     ).squeeze(-1)
 
                     graph_loss_list.append(criterion(pred_logit,label))
-                    graph_acc_list.append(Metric.compute_accuracy(
-                        pred_logit=pred_logit,
-                        label=label
-                    ))
+                    graph_sample_count+=label.numel()
+                    pred_logit_list.append(pred_logit.cpu())
+                    label_list.append(label.cpu())
                     """
                     Neural Execution
                     """
@@ -255,8 +256,12 @@ class TR_GNN_Trainer_OOD:
                         pred_logit=pred_dst_logit,
                         purpose="test"
                     )
-                loss_list.append(torch.stack(graph_loss_list).mean())
-                acc_list.append(sum(graph_acc_list)/len(graph_acc_list))
+                # Average over samples within each graph, then weight graphs equally.
+                loss_list.append(torch.stack(graph_loss_list).sum()/graph_sample_count)
+                acc_list.append(Metric.compute_accuracy(
+                    pred_logit=torch.cat(pred_logit_list,dim=0),
+                    label=torch.cat(label_list,dim=0)
+                ))
         return {
             "loss":torch.stack(loss_list).mean().item(),
             "acc":sum(acc_list)/len(acc_list)
@@ -280,7 +285,6 @@ class TR_GNN_Trainer_OOD:
         else:
             device=torch.device("cpu")
         model.to(device)
-        model.graph.to_device(device=device)
         model.eval()
 
         graph_acc_list=[]

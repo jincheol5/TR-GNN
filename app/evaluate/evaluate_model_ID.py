@@ -31,7 +31,7 @@ def main(**kwargs):
     lr=kwargs["lr"]
     source=kwargs["source"]
 
-    ### set dataset
+    ### set test_loader, test_sample_loader
     dataset_name=kwargs["dataset_name"]
     data=DataUtils.preprocess_snap_dataset(dataset_name=dataset_name)
     graph_df=data["graph_df"]
@@ -47,6 +47,13 @@ def main(**kwargs):
             node_dim=node_dim,
             edge_dim=edge_dim
         )
+    graph_dataset=TemporalGraphDataset(df=graph_df)
+    graph_loader=DataLoader(dataset=graph_dataset,batch_size=batch_size,shuffle=False)
+    _,_,test_loader=TrainUtils.split_data_loader(data_loader=graph_loader)
+    test_sample_loader=DataUtils.load_ID_test_sample_loader(
+        dataset_name=dataset_name,
+        source=source
+    )
 
     ### set model
     match model_name:
@@ -143,15 +150,6 @@ def main(**kwargs):
         "model_name":kwargs["model_name"],
         "source":source
     }
-
-    ### set test_loader, test_sample_loader
-    graph_dataset=TemporalGraphDataset(df=graph_df)
-    graph_loader=DataLoader(dataset=graph_dataset,batch_size=batch_size,shuffle=False)
-    _,_,test_loader=TrainUtils.split_data_loader(data_loader=graph_loader)
-    test_sample_loader=DataUtils.load_ID_test_sample_loader(
-        dataset_name=dataset_name,
-        source=source
-    )
 
     ### Evaluation
     match model_name:

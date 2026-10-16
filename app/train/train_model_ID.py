@@ -22,16 +22,8 @@ def main(**kwargs):
     n_layer=1
     n_neighbor=10
     n_head=4
-
-    ### TGN 하이퍼 파라미터
     msg_fn=f"mlp"
     aggr_fn=f"mean"
-
-    ### DyGFormer 하이퍼 파라미터
-    co_dim=32
-    common_dim=32
-    max_history_len=10
-    patch_size=5
 
     ### 학습 관련 파라미터
     optimizer=f"adam"
@@ -45,40 +37,7 @@ def main(**kwargs):
     n_pair=10
     source=kwargs["source"]
 
-    ### set model_config
-    model_config={
-        # 모델 공동 하이퍼 파라미터
-        "model_name":kwargs["model_name"],
-        "time_dim":time_dim,
-        "latent_dim":latent_dim,
-        "embed_dim":embed_dim,
-        "n_layer":n_layer,
-        "n_neighbor":n_neighbor,
-        "n_head":n_head,
-
-        # DyGFormer 하이퍼 파라미터
-        "co_dim":co_dim,
-        "common_dim":common_dim,
-        "max_history_len":max_history_len,
-        "patch_size":patch_size,
-        
-        # 학습 관련 파라미터
-        "seed":seed,
-        "optimizer":optimizer,
-        "epoch":epoch,
-        "early_stop":early_stop,
-        "patience":patience,
-        "batch_size":batch_size,
-        "lr":lr,
-
-        # sampling 관련 파라미터
-        "sampling":sampling,
-        "n_sample":n_sample,
-        "n_pair":n_pair,
-        "source":source
-    }
-
-    ### set dataset
+    ### set data_loader, TR result
     dataset_name=kwargs["dataset_name"]
     data=DataUtils.preprocess_snap_dataset(dataset_name=dataset_name)
     graph_df=data["graph_df"]
@@ -94,6 +53,29 @@ def main(**kwargs):
             node_dim=node_dim,
             edge_dim=edge_dim
         )
+    graph_dataset=TemporalGraphDataset(df=graph_df)
+    graph_loader=DataLoader(dataset=graph_dataset,batch_size=batch_size,shuffle=False)
+    train_loader,val_loader,_=TrainUtils.split_data_loader(data_loader=graph_loader)
+    train_TR_result=DataUtils.load_SNAP_TR_result(
+        dataset_name=dataset_name,
+        batch_size=batch_size,
+        purpose="train"
+    )
+    val_TR_result=DataUtils.load_SNAP_TR_result(
+        dataset_name=dataset_name,
+        batch_size=batch_size,
+        purpose="val"
+    )
+
+    ### set val_sample_loader using TR sampling
+    val_sample_loader=TrainUtils.get_TR_sample_loader(
+        source=source,
+        data_loader=val_loader,
+        TR_result=val_TR_result,
+        sampling=f"evaluate",
+        n_sample=n_sample,
+        n_pair=n_pair
+    )
 
     ### set model
     match model_name:
@@ -124,6 +106,11 @@ def main(**kwargs):
                 aggr_fn=aggr_fn
             )
         case "DyGFormer":
+            ### DyGFormer 하이퍼 파라미터
+            co_dim=32
+            common_dim=32
+            max_history_len=10
+            patch_size=5
             model=DyGFormer(
                 node_dim=node_dim,
                 edge_dim=edge_dim,
@@ -169,32 +156,23 @@ def main(**kwargs):
             )
     model.set_graph(graph=graph)
 
-    ### set data_loader
-    graph_dataset=TemporalGraphDataset(df=graph_df)
-    graph_loader=DataLoader(dataset=graph_dataset,batch_size=batch_size,shuffle=False)
-    train_loader,val_loader,_=TrainUtils.split_data_loader(data_loader=graph_loader)
+    ### set model_config
+    model_config={
+        "model_name":kwargs["model_name"],
+        "optimizer":optimizer,
+        "epoch":epoch,
+        "early_stop":early_stop,
+        "patience":patience,
+        "batch_size":batch_size,
+        "seed":seed,
+        "lr":lr,
 
-    ### load TR result
-    train_TR_result=DataUtils.load_SNAP_TR_result(
-        dataset_name=dataset_name,
-        batch_size=batch_size,
-        purpose="train"
-    )
-    val_TR_result=DataUtils.load_SNAP_TR_result(
-        dataset_name=dataset_name,
-        batch_size=batch_size,
-        purpose="val"
-    )
-
-    ### set val_sample_loader using TR sampling
-    val_sample_loader=TrainUtils.get_TR_sample_loader(
-        source=source,
-        data_loader=val_loader,
-        TR_result=val_TR_result,
-        sampling=f"base",
-        n_sample=n_sample,
-        n_pair=n_pair
-    )
+        # sampling 관련 파라미터
+        "sampling":sampling,
+        "n_sample":n_sample,
+        "n_pair":n_pair,
+        "source":source
+    }
 
     ### train model
     match model_name:

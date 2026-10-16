@@ -37,3 +37,25 @@ class ModelUtils:
         model.load_state_dict(torch.load(file_path))
         print(f"Load {file_name} model parameter!")
         return model
+
+    @staticmethod
+    def save_OOD_model_parameter(
+            model:nn.Module,
+            file_name:str
+        ):
+        file_name=file_name+".pt"
+        file_path=os.path.join(BASE_PATH,f"OOD",file_name)
+        os.makedirs(os.path.dirname(file_path),exist_ok=True)
+        torch.save(model.state_dict(),file_path)
+        print(f"Save {file_name} model parameter!")
+
+    @staticmethod
+    def load_OOD_model_parameter(
+            model:nn.Module,
+            file_name:str
+        ):
+        file_name=file_name+".pt"
+        file_path=os.path.join(BASE_PATH,f"OOD",file_name)
+        model.load_state_dict(torch.load(file_path))
+        print(f"Load {file_name} model parameter!")
+        return model

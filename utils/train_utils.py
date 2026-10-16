@@ -251,62 +251,44 @@ class TrainUtils:
 
     @staticmethod
     def get_graph_list(
-            graph_df_list_dict:dict[str,list[pd.DataFrame]],
+            graph_df_list:list[pd.DataFrame],
             model_name:Literal["TGAT","TGN","DyGFormer","ReaCH-TGN","TR-GNN"],
             node_dim:int,
             edge_dim:int
         ):
-        graph_type_list=[
-            "ladder",
-            "grid",
-            "tree",
-            "erdos_renyi",
-            "barabasi_albert",
-            "community",
-            "caveman"
-        ]
+        """
+        convert graph_df_list to graph_list
+        """
         graph_list=[]
-        for graph_type in graph_type_list:
-            graph_df_list=graph_df_list_dict[graph_type]
-            for graph_df in graph_df_list:
-                if model_name=="DyGFormer":
-                    graph=DyGFormer_Graph(
-                        graph_df=graph_df,
-                        node_dim=node_dim,
-                        edge_dim=edge_dim
-                    )
-                else: # TGAT, TGN, ReaCH-TGN, TR-GNN
-                    graph=TGN_Graph(
-                        graph_df=graph_df,
-                        node_dim=node_dim,
-                        edge_dim=edge_dim
-                    )
-                graph_list.append(graph)
+        for graph_df in graph_df_list:
+            if model_name=="DyGFormer":
+                graph=DyGFormer_Graph(
+                    graph_df=graph_df,
+                    node_dim=node_dim,
+                    edge_dim=edge_dim
+                )
+            else: # TGAT, TGN, ReaCH-TGN, TR-GNN
+                graph=TGN_Graph(
+                    graph_df=graph_df,
+                    node_dim=node_dim,
+                    edge_dim=edge_dim
+                )
+            graph_list.append(graph)
         return graph_list
 
     @staticmethod
     def get_graph_loader_list(
-            graph_df_list_dict:dict[str,list[pd.DataFrame]],
+            graph_df_list:list[pd.DataFrame],
             batch_size:int
         ):
         """
+        convert graph_df_list to graph_loader_list
         """
-        graph_type_list=[
-            "ladder",
-            "grid",
-            "tree",
-            "erdos_renyi",
-            "barabasi_albert",
-            "community",
-            "caveman"
-        ]
         graph_loader_list=[]
-        for graph_type in graph_type_list:
-            graph_df_list=graph_df_list_dict[graph_type]
-            for graph_df in graph_df_list:
-                graph_dataset=TemporalGraphDataset(df=graph_df)
-                graph_loader=DataLoader(graph_dataset,batch_size=batch_size,shuffle=False)
-                graph_loader_list.append(graph_loader)
+        for graph_df in graph_df_list:
+            graph_dataset=TemporalGraphDataset(df=graph_df)
+            graph_loader=DataLoader(graph_dataset,batch_size=batch_size,shuffle=False)
+            graph_loader_list.append(graph_loader)
         return graph_loader_list
 
     @staticmethod
