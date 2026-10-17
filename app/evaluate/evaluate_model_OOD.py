@@ -31,51 +31,25 @@ def main(**kwargs):
     if n_node==100:
         batch_size=32
     else: # 500, 1000
-        batch_size=100
+        batch_size=200
 
     ### set test_graph_list, test_loader_list
-    graph_type_list=[
-        "ladder",
-        "grid",
-        "tree",
-        "erdos_renyi",
-        "barabasi_albert",
-        "community",
-        "caveman"
-    ]
-    test_graph_list=[]
-    test_loader_list=[]
-    test_TR_result_list=[]
-    for graph_type in graph_type_list:
-        # get test_graph_list, test_loader_list
-        file_name=f"{graph_type}_test_N{n_node}"
-        graph_df_list=DataUtils.load_graph_df_list_pickle(
-            file_name=file_name,
-            purpose=f"test"
-        )
-        graph_list=TrainUtils.get_graph_list(
-            graph_df_list=graph_df_list,
-            model_name=model_name,
-            node_dim=node_dim,
-            edge_dim=edge_dim
-        )
-        test_graph_list.extend(graph_list)
-        graph_loader_list=TrainUtils.get_graph_loader_list(graph_df_list=graph_df_list,batch_size=batch_size)   
-        test_loader_list.extend(graph_loader_list)
-
-        # get test_TR_result_list
-        file_name=f"{graph_type}_test_N{n_node}_B{batch_size}"
-        TR_result_list=DataUtils.load_TR_result_list(
-            file_name=file_name,
-            purpose=f"test"
-        )
-        test_TR_result_list.extend(TR_result_list)
+    test_data=TrainUtils.get_data_for_evaluate_OOD(
+        model_name=model_name,
+        node_dim=node_dim,
+        edge_dim=edge_dim,
+        n_node=n_node,
+        batch_size=batch_size,
+        purpose=f"test"
+    )
+    test_graph_list=test_data["graph_list"]
+    test_loader_list=test_data["graph_loader_list"]
 
     ### set test_sample_loader_list
-    test_sample_loader_list=TrainUtils.get_sample_loader_list(
-        n_node=n_node,
-        graph_loader_list=test_loader_list,
-        TR_result_list=test_TR_result_list
+    file_name=f"test_sample_loader_list_N{n_node}_B{batch_size}"
+    test_sample_loader_list=DataUtils.load_evaluate_sample_loader_list(
+        file_name=file_name,
+        purpose=f"test"
     )
 
     ### set model
