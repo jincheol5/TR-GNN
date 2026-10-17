@@ -212,6 +212,9 @@ class TR_GNN_Trainer_OOD:
                         edge=event_edge.to(device)
                     )
 
+                    if batch_sample["src"].numel()==0:
+                        continue
+
                     src=batch_sample["src"].to(device)
                     dst=batch_sample["dst"].to(device)
                     query_t=batch_sample["query_t"].to(device)
@@ -246,12 +249,16 @@ class TR_GNN_Trainer_OOD:
                         pred_logit=pred_dst_logit,
                         purpose="test"
                     )
+                if graph_sample_count==0:
+                    continue
                 # Average over samples within each graph, then weight graphs equally.
                 loss_list.append(torch.stack(graph_loss_list).sum()/graph_sample_count)
                 acc_list.append(Metric.compute_accuracy(
                     pred_logit=torch.cat(pred_logit_list,dim=0),
                     label=torch.cat(label_list,dim=0)
                 ))
+        if not loss_list:
+            raise ValueError("No nonempty validation samples available.")
         return {
             "loss":torch.stack(loss_list).mean().item(),
             "acc":sum(acc_list)/len(acc_list)
@@ -301,6 +308,9 @@ class TR_GNN_Trainer_OOD:
                         edge=event_edge.to(device)
                     )
 
+                    if batch_sample["src"].numel()==0:
+                        continue
+
                     src=batch_sample["src"].to(device)
                     dst=batch_sample["dst"].to(device)
                     query_t=batch_sample["query_t"].to(device)
@@ -333,6 +343,8 @@ class TR_GNN_Trainer_OOD:
                         pred_logit=pred_dst_logit,
                         purpose="test"
                     )
+                if not label_list:
+                    continue
                 # Compute accuracy over all samples in the current graph.
                 graph_acc=Metric.compute_accuracy(
                     pred_logit=torch.cat(pred_logit_list,dim=0),
@@ -340,6 +352,8 @@ class TR_GNN_Trainer_OOD:
                 )
                 graph_acc_list.append(graph_acc)
 
+        if not graph_acc_list:
+            raise ValueError("No nonempty evaluation samples available.")
         # Give each graph equal weight in the final accuracy.
         return {
             "acc":sum(graph_acc_list)/len(graph_acc_list)

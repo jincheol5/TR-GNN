@@ -188,7 +188,10 @@ class ModelTrainer_OOD:
                             edge=event_edge.to(device)
                         )
 
-                    # Focused sampling uses one source for every pair in this batch.
+                    if batch_sample["src"].numel()==0:
+                        continue
+
+                    # Each nonempty batch contains pairs for one source.
                     val_graph.set_source_info(source=int(batch_sample["src"][0].item()))
                     src=batch_sample["src"].to(device)
                     dst=batch_sample["dst"].to(device)
@@ -204,12 +207,16 @@ class ModelTrainer_OOD:
                     graph_sample_count+=label.numel()
                     pred_logit_list.append(pred_logit.cpu())
                     label_list.append(label.cpu())
+                if graph_sample_count==0:
+                    continue
                 # Average over samples within each graph, then weight graphs equally.
                 loss_list.append(torch.stack(graph_loss_list).sum()/graph_sample_count)
                 acc_list.append(Metric.compute_accuracy(
                     pred_logit=torch.cat(pred_logit_list,dim=0),
                     label=torch.cat(label_list,dim=0)
                 ))
+        if not loss_list:
+            raise ValueError("No nonempty validation samples available.")
         return {
             "loss":torch.stack(loss_list).mean().item(),
             "acc":sum(acc_list)/len(acc_list)
@@ -256,7 +263,10 @@ class ModelTrainer_OOD:
                             edge=event_edge.to(device)
                         )
 
-                    # Focused sampling uses one source for every pair in this batch.
+                    if batch_sample["src"].numel()==0:
+                        continue
+
+                    # Each nonempty batch contains pairs for one source.
                     test_graph.set_source_info(source=int(batch_sample["src"][0].item()))
                     src=batch_sample["src"].to(device)
                     dst=batch_sample["dst"].to(device)
@@ -269,6 +279,8 @@ class ModelTrainer_OOD:
                     ).squeeze(-1)
                     pred_logit_list.append(pred_logit.cpu())
                     label_list.append(label.cpu())
+                if not label_list:
+                    continue
                 # Compute accuracy over all samples in the current graph.
                 graph_acc=Metric.compute_accuracy(
                     pred_logit=torch.cat(pred_logit_list,dim=0),
@@ -276,6 +288,8 @@ class ModelTrainer_OOD:
                 )
                 graph_acc_list.append(graph_acc)
 
+        if not graph_acc_list:
+            raise ValueError("No nonempty evaluation samples available.")
         # Give each graph equal weight in the final accuracy.
         return {
             "acc":sum(graph_acc_list)/len(graph_acc_list)
