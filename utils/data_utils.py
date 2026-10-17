@@ -241,3 +241,31 @@ class DataUtils:
         file_path=os.path.join(BASE_PATH,"TR-GNN","TR_result",purpose,file_name)
         TR_result_list=torch.load(file_path)
         return TR_result_list
+
+    @staticmethod
+    def save_evaluate_sample_loader_list(
+            sample_loader_list:list[list[dict[str,torch.Tensor]]],
+            file_name:str,
+            purpose:Literal["val","test"]
+        ):
+        """
+        각 graph마다 10개 랜덤 source에 대한 sample_loader의 list 저장 
+        """
+        file_name=f"{file_name}.pt"
+        file_path=os.path.join(BASE_PATH,"TR-GNN","OOD_evaluate_sample_loader_list",purpose,file_name)
+        os.makedirs(os.path.dirname(file_path),exist_ok=True)
+        torch.save(sample_loader_list,file_path)
+        print(f"Save {file_name}!")
+
+    @staticmethod
+    def load_evaluate_sample_loader_list(
+            file_name:str,
+            purpose:Literal["val","test"]
+        )->list[list[dict[str,torch.Tensor]]]:
+        """
+        각 graph마다 10개 랜덤 source에 대한 sample_loader의 list를 로드
+        """
+        file_name=f"{file_name}.pt"
+        file_path=os.path.join(BASE_PATH,"TR-GNN","OOD_evaluate_sample_loader_list",purpose,file_name)
+        test_sample_loader_list=torch.load(file_path)
+        return test_sample_loader_list

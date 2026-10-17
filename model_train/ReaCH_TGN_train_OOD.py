@@ -49,10 +49,10 @@ class ReaCH_TGN_Trainer_OOD:
         Model train
         """
         for epoch in tqdm(range(kwargs["epoch"]),desc=f"Model Training..."):
-            train_sample_loader_list=TrainUtils.get_sample_loader_list(
+            train_sample_loader_list=TrainUtils.get_sample_loader_list_for_train_OOD(
                 n_node=kwargs["n_node"],
-                graph_loader_list=train_loader_list,
-                TR_result_list=TR_result_list
+                all_graph_loader_list=train_loader_list,
+                all_TR_result_list=TR_result_list
             )
             model.train()
             for train_graph,train_loader,train_sample_loader,TR_result in tqdm(
@@ -61,6 +61,9 @@ class ReaCH_TGN_Trainer_OOD:
                     desc=f"Training epoch {epoch+1} (OOD)..."
                 ):
                 model.set_graph(graph=train_graph)
+                train_graph.set_source_info(
+                    source=int(train_sample_loader[0]["src"][0].item())
+                )
                 TR_hop=TR_result["hop"]
                 TR_first_t=TR_result["first_t"]
                 for batch_idx,(batch_event,batch_sample) in enumerate(zip(train_loader,train_sample_loader)):
@@ -244,6 +247,9 @@ class ReaCH_TGN_Trainer_OOD:
                     desc="Validate (OOD)..."
                 ):
                 model.set_graph(graph=val_graph)
+                val_graph.set_source_info(
+                    source=int(val_sample_loader[0]["src"][0].item())
+                )
 
                 graph_loss_list=[]
                 pred_logit_list=[]
@@ -315,6 +321,9 @@ class ReaCH_TGN_Trainer_OOD:
                     desc="Evaluate (OOD)..."
                 ):
                 model.set_graph(graph=test_graph)
+                test_graph.set_source_info(
+                    source=int(test_sample_loader[0]["src"][0].item())
+                )
 
                 pred_logit_list=[]
                 label_list=[]

@@ -7,6 +7,7 @@ from typing import Literal
 from tqdm import tqdm
 from torch.utils.data import Dataset,DataLoader,Subset
 from graph import TemporalGraph,TGN_Graph,DyGFormer_Graph
+from .data_utils import DataUtils
 from .graph_utils import GraphAlgorithm
 from .sampling_utils import SamplingUtils
 
@@ -247,72 +248,93 @@ class TrainUtils:
         return TR_sample_loader
 
     @staticmethod
-    def get_graph_list(
-            graph_df_list:list[pd.DataFrame],
+    def get_data_for_train_OOD(
             model_name:Literal["TGAT","TGN","DyGFormer","ReaCH-TGN","TR-GNN"],
             node_dim:int,
             edge_dim:int
         ):
         """
-        convert graph_df_list to graph_list
+        Return 
+            all_graph_list, 
+            all_graph_loader_list, 
+            all_TR_result_list
         """
-        graph_list=[]
-        for graph_df in graph_df_list:
-            if model_name=="DyGFormer":
-                graph=DyGFormer_Graph(
-                    graph_df=graph_df,
-                    node_dim=node_dim,
-                    edge_dim=edge_dim
+        n_node=100
+        batch_size=32
+        graph_type_list=[
+            "ladder",
+            "grid",
+            "tree",
+            "erdos_renyi",
+            "barabasi_albert",
+            "community",
+            "caveman"
+        ]
+        all_graph_list=[]
+        all_graph_loader_list=[]
+        all_TR_result_list=[]
+        for graph_type in graph_type_list:
+            ### load graph_df_list for all_graph_list, all_graph_loader_list
+            graph_df_list_file_name=f"{graph_type}_train_N{n_node}"
+            graph_df_list=DataUtils.load_graph_df_list_pickle(
+                file_name=graph_df_list_file_name,
+                purpose=f"train"
+            )
+
+            ### load TR_result_list for all_TR_result_list
+            TR_result_list_file_name=f"{graph_type}_train_N{n_node}_B{batch_size}"
+            TR_result_list=DataUtils.load_TR_result_list(
+                file_name=TR_result_list_file_name,
+                purpose=f"train"
+            )
+
+            if len(graph_df_list)!=len(TR_result_list):
+                print(
+                    f"Error: {graph_type} train graph/TR result count mismatch: "
+                    f"graph_df_list={len(graph_df_list)}, TR_result_list={len(TR_result_list)}"
                 )
-            else: # TGAT, TGN, ReaCH-TGN, TR-GNN
-                graph=TGN_Graph(
-                    graph_df=graph_df,
-                    node_dim=node_dim,
-                    edge_dim=edge_dim
-                )
-            graph_list.append(graph)
-        return graph_list
+                return
+
+            for graph_df,TR_result in zip(graph_df_list,TR_result_list):
+                ### all_graph_list
+                if model_name=="DyGFormer":
+                    graph=DyGFormer_Graph(
+                        graph_df=graph_df,
+                        node_dim=node_dim,
+                        edge_dim=edge_dim
+                    )
+                else: # TGAT, TGN, ReaCH-TGN, TR-GNN
+                    graph=TGN_Graph(
+                        graph_df=graph_df,
+                        node_dim=node_dim,
+                        edge_dim=edge_dim
+                    )
+                all_graph_list.append(graph)
+
+                ### all_graph_loader_list
+                graph_dataset=TemporalGraphDataset(df=graph_df)
+                graph_loader=DataLoader(graph_dataset,batch_size=batch_size,shuffle=False)
+                all_graph_loader_list.append(graph_loader)
+
+                ### all_TR_result_list
+                all_TR_result_list.append(TR_result)
+        return {
+            "graph_list":all_graph_list,
+            "graph_loader_list":all_graph_loader_list,
+            "TR_result_list":all_TR_result_list
+        }
 
     @staticmethod
-    def get_graph_loader_list(
-            graph_df_list:list[pd.DataFrame],
-            batch_size:int
-        ):
-        """
-        convert graph_df_list to graph_loader_list
-        """
-        graph_loader_list=[]
-        for graph_df in graph_df_list:
-            graph_dataset=TemporalGraphDataset(df=graph_df)
-            graph_loader=DataLoader(graph_dataset,batch_size=batch_size,shuffle=False)
-            graph_loader_list.append(graph_loader)
-        return graph_loader_list
-
-    @staticmethod
-    def get_sample_loader_list(
+    def get_sample_loader_list_for_train_OOD(
             n_node:int,
-            graph_loader_list:list[DataLoader],
-            TR_result_list:list[dict[str,torch.Tensor]]
+            all_graph_loader_list:list[DataLoader],
+            all_TR_result_list:list[dict[str,torch.Tensor]]
         ):
         """
-        graph_df (with source) 하나 -> sample_loader 하나
-        sample: 
-            {
-                "src":src,
-                "dst":dst,
-                "label":label,
-                "query_t":query_t,
-                "pos_mask":pos_mask,
-                "weight":weight
-            }
-
-        Input:
-            n_node
-            graph_loader_list: all type graph_loader list
-            TR_result_list: all type TR_result list
+        Return all_sample_loader_list
         """
-        sample_loader_list=[]
-        for graph_loader,TR_result in zip(graph_loader_list,TR_result_list):
+        all_sample_loader_list=[]
+        for graph_loader,TR_result in zip(all_graph_loader_list,all_TR_result_list):
             source=random.randint(1,n_node)
             sample_loader=TrainUtils.get_TR_sample_loader(
                 source=source,
@@ -320,5 +342,91 @@ class TrainUtils:
                 TR_result=TR_result,
                 sampling=f"focused"
             )
-            sample_loader_list.append(sample_loader)
-        return sample_loader_list
+            all_sample_loader_list.append(sample_loader)
+        return all_sample_loader_list
+
+    @staticmethod
+    def get_data_for_evaluate_OOD(
+            model_name:Literal["TGAT","TGN","DyGFormer","ReaCH-TGN","TR-GNN"]=f"TGN",
+            node_dim:int=32,
+            edge_dim:int=32,
+            n_node:int=100,
+            batch_size:int=32,
+            purpose:Literal["val","test"]="test",
+        ):
+        """
+        Return 
+            all_graph_list, 
+            all_graph_loader_list, 
+            all_sample_loader_list
+        """
+        graph_type_list=[
+            "ladder",
+            "grid",
+            "tree",
+            "erdos_renyi",
+            "barabasi_albert",
+            "community",
+            "caveman"
+        ]
+        all_graph_list=[]
+        all_graph_loader_list=[]
+        all_sample_loader_list=[]
+        for graph_type in graph_type_list:
+            ### load graph_df_list for all_graph_list, all_graph_loader_list
+            graph_df_list_file_name=f"{graph_type}_{purpose}_N{n_node}"
+            graph_df_list=DataUtils.load_graph_df_list_pickle(
+                file_name=graph_df_list_file_name,
+                purpose=purpose
+            )
+
+            ### load TR_result_list for all_TR_result_list
+            TR_result_list_file_name=f"{graph_type}_{purpose}_N{n_node}_B{batch_size}"
+            TR_result_list=DataUtils.load_TR_result_list(
+                file_name=TR_result_list_file_name,
+                purpose=purpose
+            )
+
+            if len(graph_df_list)!=len(TR_result_list):
+                print(
+                    f"Error: {graph_type} ({purpose}) graph/TR result count mismatch: "
+                    f"graph_df_list={len(graph_df_list)}, TR_result_list={len(TR_result_list)}"
+                )
+                return
+
+            for graph_df,TR_result in zip(graph_df_list,TR_result_list):
+                for _ in range(10):
+                    ### all_graph_list
+                    if model_name=="DyGFormer":
+                        graph=DyGFormer_Graph(
+                            graph_df=graph_df,
+                            node_dim=node_dim,
+                            edge_dim=edge_dim
+                        )
+                    else: # TGAT, TGN, ReaCH-TGN, TR-GNN
+                        graph=TGN_Graph(
+                            graph_df=graph_df,
+                            node_dim=node_dim,
+                            edge_dim=edge_dim
+                        )
+                    all_graph_list.append(graph)
+
+                    ### all_graph_loader
+                    graph_dataset=TemporalGraphDataset(df=graph_df)
+                    graph_loader=DataLoader(graph_dataset,batch_size=batch_size,shuffle=False)
+                    all_graph_loader_list.append(graph_loader)
+
+                    ### all_sample_loader_list
+                    source=random.randint(1,n_node)
+                    sample_loader=TrainUtils.get_TR_sample_loader(
+                        source=source,
+                        data_loader=graph_loader,
+                        TR_result=TR_result,
+                        sampling=f"evaluate"
+                    )
+                    all_sample_loader_list.append(sample_loader)
+        return {
+            "graph_list":all_graph_list,
+            "graph_loader_list":all_graph_loader_list,
+            "sample_loader_list":all_sample_loader_list
+        }

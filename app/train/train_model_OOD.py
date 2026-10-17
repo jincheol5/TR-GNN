@@ -33,77 +33,30 @@ def main(**kwargs):
     lr=kwargs["lr"]
 
     ### set train_graph_list, train_loader_list, train_TR_result_list
-    graph_type_list=[
-        "ladder",
-        "grid",
-        "tree",
-        "erdos_renyi",
-        "barabasi_albert",
-        "community",
-        "caveman"
-    ]
-    train_graph_list=[]
-    train_loader_list=[]
-    train_TR_result_list=[]
-    for graph_type in graph_type_list:
-        # get train_graph_list, train_loader_list
-        file_name=f"{graph_type}_train_N{n_node}"
-        graph_df_list=DataUtils.load_graph_df_list_pickle(
-            file_name=file_name,
-            purpose=f"train"
-        )
-        graph_list=TrainUtils.get_graph_list(
-            graph_df_list=graph_df_list,
-            model_name=model_name,
-            node_dim=node_dim,
-            edge_dim=edge_dim
-        )
-        train_graph_list.extend(graph_list)
-        graph_loader_list=TrainUtils.get_graph_loader_list(graph_df_list=graph_df_list,batch_size=batch_size)   
-        train_loader_list.extend(graph_loader_list)
+    train_data=TrainUtils.get_data_for_train_OOD(
+        model_name=model_name,
+        node_dim=node_dim,
+        edge_dim=edge_dim
+    )
+    train_graph_list=train_data["graph_list"]
+    train_loader_list=train_data["graph_loader_list"]
+    train_TR_result_list=train_data["TR_result_list"]
 
-        # get train_TR_result_list
-        file_name=f"{graph_type}_train_N{n_node}_B{batch_size}"
-        TR_result_list=DataUtils.load_TR_result_list(
-            file_name=file_name,
-            purpose=f"train"
-        )
-        train_TR_result_list.extend(TR_result_list)
-
-    ### set val_graph_list, val_loader_list
-    val_graph_list=[]
-    val_loader_list=[]
-    val_TR_result_list=[]
-    for graph_type in graph_type_list:
-        # get val_graph_list, val_loader_list
-        file_name=f"{graph_type}_val_N{n_node}"
-        graph_df_list=DataUtils.load_graph_df_list_pickle(
-            file_name=file_name,
-            purpose=f"val"
-        )
-        graph_list=TrainUtils.get_graph_list(
-            graph_df_list=graph_df_list,
-            model_name=model_name,
-            node_dim=node_dim,
-            edge_dim=edge_dim
-        )
-        val_graph_list.extend(graph_list)
-        graph_loader_list=TrainUtils.get_graph_loader_list(graph_df_list=graph_df_list,batch_size=batch_size)   
-        val_loader_list.extend(graph_loader_list)
-
-        # get val_TR_result_list
-        file_name=f"{graph_type}_val_N{n_node}_B{batch_size}"
-        TR_result_list=DataUtils.load_TR_result_list(
-            file_name=file_name,
-            purpose=f"val"
-        )
-        val_TR_result_list.extend(TR_result_list)
-
-    ### set val_sample_loader_list
-    val_sample_loader_list=TrainUtils.get_sample_loader_list(
+    ### set val_graph_list, val_loader_list, val_sample_loader_list
+    val_data=TrainUtils.get_data_for_evaluate_OOD(
+        model_name=model_name,
+        node_dim=node_dim,
+        edge_dim=edge_dim,
         n_node=n_node,
-        graph_loader_list=val_loader_list,
-        TR_result_list=val_TR_result_list
+        batch_size=batch_size,
+        purpose=f"val"
+    )
+    val_graph_list=val_data["graph_list"]
+    val_loader_list=val_data["graph_loader_list"]
+    file_name=f"val_sample_loader_list_N100_B32"
+    val_sample_loader_list=DataUtils.load_evaluate_sample_loader_list(
+        file_name=file_name,
+        purpose=f"val"
     )
 
     ### set model

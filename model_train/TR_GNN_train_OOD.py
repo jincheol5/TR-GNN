@@ -49,10 +49,10 @@ class TR_GNN_Trainer_OOD:
         Model train
         """
         for epoch in tqdm(range(kwargs["epoch"]),desc=f"TR-GNN Training..."):
-            train_sample_loader_list=TrainUtils.get_sample_loader_list(
+            train_sample_loader_list=TrainUtils.get_sample_loader_list_for_train_OOD(
                 n_node=kwargs["n_node"],
-                graph_loader_list=train_loader_list,
-                TR_result_list=TR_result_list
+                all_graph_loader_list=train_loader_list,
+                all_TR_result_list=TR_result_list
             )
             model.train()
             for train_graph,train_loader,train_sample_loader,TR_result in tqdm(

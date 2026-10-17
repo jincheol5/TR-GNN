@@ -49,12 +49,11 @@ class ModelTrainer_OOD:
         """
         for epoch in tqdm(range(kwargs["epoch"]),desc=f"Model Training (OOD)..."):
             ### Epoch마다 train_sample_loader_list 생성
-            train_sample_loader_list=TrainUtils.get_sample_loader_list(
+            train_sample_loader_list=TrainUtils.get_sample_loader_list_for_train_OOD(
                 n_node=kwargs["n_node"],
-                graph_loader_list=train_loader_list,
-                TR_result_list=TR_result_list
+                all_graph_loader_list=train_loader_list,
+                all_TR_result_list=TR_result_list
             )
-
             model.train()
             for train_graph,train_loader,train_sample_loader in tqdm(
                     zip(train_graph_list,train_loader_list,train_sample_loader_list),
