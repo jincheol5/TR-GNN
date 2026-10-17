@@ -82,6 +82,7 @@ def main(**kwargs):
     match model_name:
         case "TGAT":
             model=TGAT(
+                use_source_info=True,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,
@@ -93,6 +94,7 @@ def main(**kwargs):
             )
         case "TGN":
             model=TGN(
+                use_source_info=True,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,
@@ -113,6 +115,7 @@ def main(**kwargs):
             max_history_len=10
             patch_size=5
             model=DyGFormer(
+                use_source_info=True,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 latent_dim=latent_dim,
@@ -127,6 +130,7 @@ def main(**kwargs):
             )
         case "ReaCH-TGN":
             model=ReaCH_TGN(
+                use_source_info=True,
                 node_dim=node_dim,
                 edge_dim=edge_dim,
                 time_dim=time_dim,

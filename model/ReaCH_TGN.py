@@ -17,7 +17,8 @@ class ReaCH_TGN(nn.Module):
             n_neighbor:int,
             n_head:int,
             msg_fn:Literal["concat","mlp"]="concat",
-            aggr_fn:Literal["last","mean"]="last"
+            aggr_fn:Literal["last","mean"]="last",
+            use_source_info:bool=False
         ):
         super().__init__()
         self.node_dim=node_dim
@@ -59,7 +60,7 @@ class ReaCH_TGN(nn.Module):
             n_layer=n_layer,
             n_neighbor=n_neighbor,
             n_head=n_head,
-            use_last_state=False,
+            use_last_state=use_source_info,
             use_memory=True,
             time_encoder=self.time_encoder
         )
@@ -123,6 +124,7 @@ class ReaCH_TGN(nn.Module):
         embedded_tar_vec=self.encoder.compute_embedding(
             tar=tar,
             tar_t=tar_t,
+            last_state=self.graph.source_info,
             mem_vec=mem_vec,
             n_layer=self.n_layer
         )
@@ -180,6 +182,7 @@ class ReaCH_TGN(nn.Module):
         embedded_tar_vec=self.encoder.compute_embedding(
             tar=tar,
             tar_t=tar_t,
+            last_state=self.graph.source_info,
             mem_vec=mem_vec,
             n_layer=self.n_layer
         )

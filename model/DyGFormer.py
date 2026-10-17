@@ -15,7 +15,8 @@ class DyGFormer(nn.Module):
             n_layer:int,
             n_head:int,
             max_history_len:int,
-            patch_size:int
+            patch_size:int,
+            use_source_info:bool=False
         ):
         super().__init__()
         self.node_dim=node_dim
@@ -29,8 +30,7 @@ class DyGFormer(nn.Module):
         self.n_head=n_head
         self.max_history_len=max_history_len
         self.patch_size=patch_size
-
-        
+        self.use_source_info=use_source_info
 
         # time encoder
         self.time_encoder=TimeEncoder(time_dim=time_dim)
@@ -46,7 +46,7 @@ class DyGFormer(nn.Module):
         self.patch_encoder=nn.ModuleDict(
             {
                 "node":nn.Linear(
-                    in_features=patch_size*node_dim,
+                    in_features=patch_size*(node_dim+int(use_source_info)),
                     out_features=common_dim
                 ),
                 "edge":nn.Linear(
@@ -125,6 +125,8 @@ class DyGFormer(nn.Module):
             pred_logit: [B,1]
         """
         device=src.device
+        if self.use_source_info and self.graph.source_info is None:
+            raise ValueError("use_source_info=True requires graph.set_source_info(source).")
 
         ### 1. get sequence data
         src_result=self.graph.get_history_seq(
@@ -188,6 +190,15 @@ class DyGFormer(nn.Module):
         dst_edge_seq_vec=dst_edge_seq_vec.to(device)
         dst_ts_seq=dst_ts_seq.to(device)
         dst_co_vec=dst_co_vec.to(device)
+
+        if self.use_source_info:
+            source_info=self.graph.source_info.to(
+                device=device,dtype=src_node_seq_vec.dtype
+            )
+            src_indicator=source_info[src_seq].masked_fill(src_seq==0,0).unsqueeze(-1)
+            dst_indicator=source_info[dst_seq].masked_fill(dst_seq==0,0).unsqueeze(-1)
+            src_node_seq_vec=torch.cat([src_node_seq_vec,src_indicator],dim=-1)
+            dst_node_seq_vec=torch.cat([dst_node_seq_vec,dst_indicator],dim=-1)
 
         ### 5. encoding timespan using time_encoder
         src_ts_seq_vec=self.time_encoder(src_ts_seq) 

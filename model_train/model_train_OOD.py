@@ -79,6 +79,8 @@ class ModelTrainer_OOD:
                         )
 
                     ### TR Sample
+                    # Focused sampling uses one source for every pair in this batch.
+                    train_graph.set_source_info(source=int(batch_sample["src"][0].item()))
                     src=batch_sample["src"]
                     dst=batch_sample["dst"]
                     query_t=batch_sample["query_t"]
@@ -179,7 +181,7 @@ class ModelTrainer_OOD:
                 graph_sample_count=0
                 for batch_event,batch_sample in zip(val_loader,val_sample_loader):
                     event_src,event_dst,event_t,event_edge=batch_event
-                    if kwargs["model_name"] == "TGN":
+                    if kwargs["model_name"]=="TGN":
                         model.update_model_memory(
                             src=event_src.to(device),
                             dst=event_dst.to(device),
@@ -187,6 +189,8 @@ class ModelTrainer_OOD:
                             edge=event_edge.to(device)
                         )
 
+                    # Focused sampling uses one source for every pair in this batch.
+                    val_graph.set_source_info(source=int(batch_sample["src"][0].item()))
                     src=batch_sample["src"].to(device)
                     dst=batch_sample["dst"].to(device)
                     query_t=batch_sample["query_t"].to(device)
@@ -253,6 +257,8 @@ class ModelTrainer_OOD:
                             edge=event_edge.to(device)
                         )
 
+                    # Focused sampling uses one source for every pair in this batch.
+                    test_graph.set_source_info(source=int(batch_sample["src"][0].item()))
                     src=batch_sample["src"].to(device)
                     dst=batch_sample["dst"].to(device)
                     query_t=batch_sample["query_t"].to(device)

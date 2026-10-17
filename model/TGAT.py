@@ -12,7 +12,8 @@ class TGAT(nn.Module):
             embed_dim:int,
             n_layer:int,
             n_neighbor:int,
-            n_head:int
+            n_head:int,
+            use_source_info:bool=False
         ):
         super().__init__()
         self.node_dim=node_dim
@@ -37,7 +38,7 @@ class TGAT(nn.Module):
             n_layer=n_layer,
             n_neighbor=n_neighbor,
             n_head=n_head,
-            use_last_state=False,
+            use_last_state=use_source_info,
             use_memory=False,
             time_encoder=self.time_encoder
         )
@@ -69,6 +70,7 @@ class TGAT(nn.Module):
         embedded_tar_vec=self.encoder.compute_embedding(
             tar=tar,
             tar_t=tar_t,
+            last_state=self.graph.source_info,
             n_layer=self.n_layer
         )
         src_vec=embedded_tar_vec[:batch_size]

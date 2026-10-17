@@ -9,7 +9,8 @@ class TGN_Graph(TemporalGraph):
             node_ft:np.ndarray=None,
             edge_ft:np.ndarray=None,
             node_dim:int=32,
-            edge_dim:int=32
+            edge_dim:int=32,
+            source:int|None=None
         ):
         super().__init__(graph_df=graph_df,)
         # set node_ft, edge_ft, node_dim, edge_dim
@@ -21,10 +22,17 @@ class TGN_Graph(TemporalGraph):
             self.set_edge_ft(edge_dim=edge_dim)
         else: 
             self.set_edge_ft(edge_ft=edge_ft)
+        # set source_info tensor
+        if source is not None:
+            self.set_source_info(source=source)
+        else:
+            self.source_info=None
 
     def to_device(self,device:torch.device):
         self.node_ft=self.node_ft.to(device)
         self.edge_ft=self.edge_ft.to(device)
+        if self.source_info is not None:
+            self.source_info=self.source_info.to(device)
 
     def set_node_ft(self,
             node_ft:np.ndarray=None,
@@ -39,7 +47,7 @@ class TGN_Graph(TemporalGraph):
         """
         if node_ft is None:
             self.node_dim=node_dim
-            self.node_ft=torch.ones(
+            self.node_ft=torch.zeros(
                 (self.n_node+1,node_dim),
                 dtype=torch.float32
             )
@@ -64,7 +72,7 @@ class TGN_Graph(TemporalGraph):
         """
         if edge_ft is None:
             self.edge_dim=edge_dim
-            self.edge_ft=torch.ones(
+            self.edge_ft=torch.zeros(
                 (self.n_event+1,edge_dim),
                 dtype=torch.float32
             )
@@ -102,6 +110,23 @@ class TGN_Graph(TemporalGraph):
             return self.edge_ft
         else:
             return self.edge_ft[edge]
+
+    def set_source_info(self,
+            source:int
+        ):
+        """
+        OOD
+        """
+        self.source_info=self.node_ft.new_zeros(self.n_node+1)
+        self.source_info[source]=1
+
+    def get_source_info(self,
+            node:torch.Tensor|None=None
+        ):
+        if node is None:
+            return self.source_info
+        else:
+            return self.source_info[node]
 
     def get_temporal_neighbor(self,
             tar:torch.Tensor,
