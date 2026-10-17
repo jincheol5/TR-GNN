@@ -23,7 +23,5 @@ set -e
 
 
 for graph_type in ladder grid tree erdos_renyi barabasi_albert community caveman; do
-    for purpose in train val test; do
-        python -m app.7_type.save_7_type_TR_result --graph_type "$graph_type" --purpose "$purpose" --n_node 100 --batch_size 32
-    done
+    python -m app.7_type.save_7_type_TR_result --graph_type "$graph_type" --purpose train --n_node 100 --batch_size 32
 done
