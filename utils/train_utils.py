@@ -422,7 +422,7 @@ class TrainUtils:
                         source=source,
                         data_loader=graph_loader,
                         TR_result=TR_result,
-                        sampling=f"evaluate"
+                        sampling=f"focused"
                     )
                     all_sample_loader_list.append(sample_loader)
         return {
